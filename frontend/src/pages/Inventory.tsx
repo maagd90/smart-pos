@@ -81,7 +81,7 @@ const Inventory: React.FC = () => {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: "bold" }}>Inventory</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>Inventory</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Add Product</Button>
       </Box>
 
@@ -119,12 +119,12 @@ const Inventory: React.FC = () => {
               {filtered.map(p => (
                 <TableRow key={p.id} sx={{ '&:hover': { bgcolor: '#fafafa' }, bgcolor: p.stock === 0 ? '#fff5f5' : 'inherit' }}>
                   <TableCell>
-                    <Typography variant="body2" sx={{ fontWeight: "bold" }}>{p.name}</Typography>
+                    <Typography variant="body2" sx={{ fontWeight: 700 }}>{p.name}</Typography>
                     {p.description && <Typography variant="caption" color="textSecondary">{p.description}</Typography>}
                   </TableCell>
                   <TableCell><Typography variant="body2" color="textSecondary">{p.sku || '—'}</Typography></TableCell>
                   <TableCell><Chip label={p.category || 'N/A'} size="small" variant="outlined" /></TableCell>
-                  <TableCell><Typography variant="body2" sx={{ fontWeight: "bold" }}>${p.price.toFixed(2)}</Typography></TableCell>
+                  <TableCell><Typography variant="body2" sx={{ fontWeight: 700 }}>${p.price.toFixed(2)}</Typography></TableCell>
                   <TableCell>{getStockChip(p)}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Edit"><IconButton size="small" onClick={() => openEdit(p)}><EditIcon fontSize="small" /></IconButton></Tooltip>

@@ -91,7 +91,7 @@ const Customers: React.FC = () => {
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ fontWeight: "bold" }}>Customers</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>Customers</Typography>
         <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Add Customer</Button>
       </Box>
 
@@ -126,7 +126,7 @@ const Customers: React.FC = () => {
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Avatar sx={{ width: 28, height: 28, fontSize: 13, bgcolor: '#1976d2' }}>{c.name.charAt(0)}</Avatar>
-                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>{c.name}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>{c.name}</Typography>
                     </Box>
                   </TableCell>
                   <TableCell><Typography variant="body2">{c.email}</Typography></TableCell>
@@ -151,7 +151,7 @@ const Customers: React.FC = () => {
         {selectedCustomer && (
           <Box>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>Customer Profile</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Customer Profile</Typography>
               <IconButton onClick={() => setSelectedCustomer(null)}><CloseIcon /></IconButton>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, p: 2, bgcolor: '#e3f2fd', borderRadius: 1 }}>
@@ -166,13 +166,13 @@ const Customers: React.FC = () => {
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid size={6}>
                 <Paper sx={{ p: 1.5, textAlign: 'center' }}>
-                  <Typography variant="h5" color="primary" sx={{ fontWeight: "bold" }}>${totalSpent.toFixed(2)}</Typography>
+                  <Typography variant="h5" color="primary" sx={{ fontWeight: 700 }}>${totalSpent.toFixed(2)}</Typography>
                   <Typography variant="caption" color="textSecondary">Total Spent</Typography>
                 </Paper>
               </Grid>
               <Grid size={6}>
                 <Paper sx={{ p: 1.5, textAlign: 'center' }}>
-                  <Typography variant="h5" color="secondary" sx={{ fontWeight: "bold" }}>{purchases.length}</Typography>
+                  <Typography variant="h5" color="secondary" sx={{ fontWeight: 700 }}>{purchases.length}</Typography>
                   <Typography variant="caption" color="textSecondary">Total Purchases</Typography>
                 </Paper>
               </Grid>
@@ -180,7 +180,7 @@ const Customers: React.FC = () => {
 
             {favoriteProducts.length > 0 && (
               <Box sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1 }}>Favorite Products</Typography>
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Favorite Products</Typography>
                 <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
                   {favoriteProducts.map(([name, qty]) => (
                     <Chip key={name} label={`${name} (${qty})`} size="small" color="primary" variant="outlined" />
@@ -190,7 +190,7 @@ const Customers: React.FC = () => {
             )}
 
             <Divider sx={{ mb: 2 }} />
-            <Typography variant="subtitle2" sx={{ fontWeight: "bold", mb: 1 }}>Purchase History</Typography>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Purchase History</Typography>
             {loadingPurchases ? <CircularProgress size={24} /> : (
               purchases.length === 0 ? (
                 <Typography color="textSecondary">No purchases yet</Typography>
@@ -198,8 +198,8 @@ const Customers: React.FC = () => {
                 purchases.map(p => (
                   <Paper key={p.id} sx={{ p: 1.5, mb: 1 }} variant="outlined">
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>Sale #{p.id}</Typography>
-                      <Typography variant="body2" color="primary" sx={{ fontWeight: "bold" }}>${(p.total_amount || 0).toFixed(2)}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>Sale #{p.id}</Typography>
+                      <Typography variant="body2" color="primary" sx={{ fontWeight: 700 }}>${(p.total_amount || 0).toFixed(2)}</Typography>
                     </Box>
                     <Typography variant="caption" color="textSecondary">{new Date(p.created_at).toLocaleString()} · {p.payment_method}</Typography>
                     <Box sx={{ mt: 0.5 }}>

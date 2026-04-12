@@ -116,7 +116,7 @@ const AIInsights: React.FC = () => {
     <Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
         <AutoAwesomeIcon color="primary" />
-        <Typography variant="h4" sx={{ fontWeight: "bold" }}>AI Insights</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>AI Insights</Typography>
       </Box>
 
       <Grid container spacing={3}>
@@ -125,7 +125,7 @@ const AIInsights: React.FC = () => {
           <Paper sx={{ p: 3, height: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <TrendingUpIcon color="primary" />
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>Demand Analysis</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Demand Analysis</Typography>
             </Box>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
               Analyze product demand trends and inventory forecasts.
@@ -142,7 +142,7 @@ const AIInsights: React.FC = () => {
           <Paper sx={{ p: 3, height: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <LocalOfferIcon color="secondary" />
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>Deal Recommendations</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Deal Recommendations</Typography>
             </Box>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
               Get AI-powered deal and discount recommendations.
@@ -159,7 +159,7 @@ const AIInsights: React.FC = () => {
           <Paper sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <PersonIcon color="info" />
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>Customer Insights</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Customer Insights</Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <FormControl size="small" sx={{ flexGrow: 1 }}>
@@ -181,7 +181,7 @@ const AIInsights: React.FC = () => {
           <Paper sx={{ p: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
               <MessageIcon color="success" />
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>Generate & Send Message</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Generate & Send Message</Typography>
             </Box>
             <Grid container spacing={2} sx={{ mb: 2 }}>
               <Grid size={12}>
@@ -210,7 +210,7 @@ const AIInsights: React.FC = () => {
             </Grid>
             {generatedMessage && (
               <Box>
-                <Typography variant="body2" sx={{ fontWeight: "bold", mb: 1 }}>Preview:</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 700, mb: 1 }}>Preview:</Typography>
                 <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: '#f9f9f9' }}>
                   <Typography variant="body2">{generatedMessage}</Typography>
                 </Paper>

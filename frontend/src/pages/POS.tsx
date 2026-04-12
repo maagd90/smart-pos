@@ -147,7 +147,7 @@ const POS: React.FC = () => {
                       <Typography variant="body2" sx={{ fontWeight: 'bold', lineHeight: 1.2, mb: 0.5 }} noWrap>{product.name}</Typography>
                       <Chip label={product.category} size="small" sx={{ mb: 0.5, fontSize: 10 }} />
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5 }}>
-                        <Typography variant="body1" color="primary" sx={{ fontWeight: "bold" }}>${product.price.toFixed(2)}</Typography>
+                        <Typography variant="body1" color="primary" sx={{ fontWeight: 700 }}>${product.price.toFixed(2)}</Typography>
                         <Typography variant="caption" color={product.stock < 10 ? 'error' : 'textSecondary'}>
                           {product.stock} left
                         </Typography>
@@ -172,12 +172,12 @@ const POS: React.FC = () => {
               <Badge badgeContent={cart.reduce((s, i) => s + i.quantity, 0)} color="primary">
                 <ShoppingCartIcon />
               </Badge>
-              <Typography variant="h6" sx={{ fontWeight: "bold" }}>Cart</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>Cart</Typography>
             </Box>
 
             {/* Customer Selector */}
             <Box sx={{ mb: 2 }}>
-              <Typography variant="body2" sx={{ fontWeight: "bold", mb: 0.5 }}>Customer</Typography>
+              <Typography variant="body2" sx={{ fontWeight: 700, mb: 0.5 }}>Customer</Typography>
               {selectedCustomer ? (
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, bgcolor: '#e3f2fd', borderRadius: 1 }}>
                   <PersonIcon fontSize="small" color="primary" />
@@ -225,7 +225,7 @@ const POS: React.FC = () => {
                 cart.map(item => (
                   <Box key={item.product.id} sx={{ mb: 1, p: 1, bgcolor: '#fafafa', borderRadius: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Typography variant="body2" sx={{ fontWeight: "bold", flexGrow: 1, mr: 1 }}>{item.product.name}</Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700, flexGrow: 1, mr: 1 }}>{item.product.name}</Typography>
                       <IconButton size="small" onClick={() => removeFromCart(item.product.id)}>
                         <DeleteIcon fontSize="small" color="error" />
                       </IconButton>
@@ -236,7 +236,7 @@ const POS: React.FC = () => {
                         <Typography sx={{ mx: 1, minWidth: 20, textAlign: 'center' }}>{item.quantity}</Typography>
                         <IconButton size="small" onClick={() => updateQty(item.product.id, 1)}><AddIcon fontSize="small" /></IconButton>
                       </Box>
-                      <Typography variant="body2" color="primary" sx={{ fontWeight: "bold" }}>
+                      <Typography variant="body2" color="primary" sx={{ fontWeight: 700 }}>
                         ${(item.product.price * item.quantity).toFixed(2)}
                       </Typography>
                     </Box>
@@ -261,7 +261,7 @@ const POS: React.FC = () => {
             <Box sx={{ p: 1.5, bgcolor: '#e3f2fd', borderRadius: 1, mb: 1 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                 <Typography variant="h6">Total:</Typography>
-                <Typography variant="h6" color="primary" sx={{ fontWeight: "bold" }}>${total.toFixed(2)}</Typography>
+                <Typography variant="h6" color="primary" sx={{ fontWeight: 700 }}>${total.toFixed(2)}</Typography>
               </Box>
               <Typography variant="caption" color="textSecondary">{cart.reduce((s, i) => s + i.quantity, 0)} item(s)</Typography>
             </Box>

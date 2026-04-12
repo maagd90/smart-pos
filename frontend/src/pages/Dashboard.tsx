@@ -135,7 +135,7 @@ const Dashboard: React.FC = () => {
                   <Typography variant="body2">#{sale.id} — {sale.customer_name || 'Walk-in'}</Typography>
                   <Typography variant="caption" color="textSecondary">{sale.payment_method}</Typography>
                 </Box>
-                <Typography sx={{ fontWeight: "bold" }}>${(sale.total_amount || 0).toFixed(2)}</Typography>
+                <Typography sx={{ fontWeight: 700 }}>${(sale.total_amount || 0).toFixed(2)}</Typography>
               </Box>
             ))}
             {!(stats.recent_sales?.length) && <Typography color="textSecondary">No recent sales</Typography>}

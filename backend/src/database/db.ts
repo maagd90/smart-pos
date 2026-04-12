@@ -59,7 +59,7 @@ db.exec(`
     customer_id INTEGER NOT NULL REFERENCES customers(id),
     content TEXT NOT NULL,
     type TEXT CHECK(type IN ('promotion', 'follow_up', 'deal')) DEFAULT 'promotion',
-    status TEXT CHECK(status IN ('sent', 'pending')) DEFAULT 'pending',
+    status TEXT CHECK(status IN ('sent', 'pending', 'failed')) DEFAULT 'pending',
     ai_generated INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );

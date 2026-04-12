@@ -45,7 +45,7 @@ const Messages: React.FC = () => {
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ fontWeight: "bold", mb: 3 }}>Messages</Typography>
+      <Typography variant="h4" sx={{ fontWeight: 700, mb: 3 }}>Messages</Typography>
 
       <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
         <TextField
