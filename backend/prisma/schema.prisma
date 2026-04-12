@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  CASHIER
+  ANALYST
+}
+
+enum CustomerSegment {
+  VIP
+  PREMIUM
+  REGULAR
+  NEW
+  INACTIVE
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  DIGITAL_WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  REFUNDED
+}
+
+enum ReceiptFormat {
+  THERMAL
+  A4
+  DIGITAL
+}
+
+enum MessageChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+enum StockAdjustmentType {
+  ADDITION
+  SUBTRACTION
+  WASTE
+  CORRECTION
+}
+
+enum MachineStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  password     String
+  role         Role     @default(CASHIER)
+  isActive     Boolean  @default(true)
+  machineId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions     Transaction[]
+  messages         Message[]
+  stockAdjustments StockAdjustment[]
+  auditLogs        AuditLog[]
+  campaigns        Campaign[]
+
+  @@map("users")
+}
+
+model Product {
+  id           String   @id @default(uuid())
+  name         String
+  sku          String   @unique
+  barcode      String?  @unique
+  description  String?
+  price        Float
+  costPrice    Float    @default(0)
+  category     String
+  stock        Int      @default(0)
+  minStock     Int      @default(5)
+  reorderPoint Int      @default(10)
+  expiryDate   DateTime?
+  imageUrl     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactionItems TransactionItem[]
+  stockAdjustments StockAdjustment[]
+
+  @@map("products")
+}
+
+model Customer {
+  id            String          @id @default(uuid())
+  phone         String?         @unique
+  email         String?         @unique
+  name          String
+  loyaltyPoints Int             @default(0)
+  totalSpent    Float           @default(0)
+  visitCount    Int             @default(0)
+  segment       CustomerSegment @default(NEW)
+  lastVisit     DateTime?
+  optInWhatsapp Boolean         @default(false)
+  optInSms      Boolean         @default(false)
+  optInEmail    Boolean         @default(false)
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  transactions Transaction[]
+  messages     Message[]
+
+  @@map("customers")
+}
+
+model Transaction {
+  id            String        @id @default(uuid())
+  receiptNumber String        @unique
+  customerId    String?
+  userId        String
+  machineId     String?
+  items         Json
+  subtotal      Float
+  tax           Float         @default(0)
+  discount      Float         @default(0)
+  total         Float
+  paymentMethod PaymentMethod
+  paymentStatus PaymentStatus @default(COMPLETED)
+  notes         String?
+  createdAt     DateTime      @default(now())
+
+  customer         Customer?         @relation(fields: [customerId], references: [id])
+  user             User              @relation(fields: [userId], references: [id])
+  transactionItems TransactionItem[]
+  receipt          Receipt?
+
+  @@map("transactions")
+}
+
+model TransactionItem {
+  id            String  @id @default(uuid())
+  transactionId String
+  productId     String
+  quantity      Int
+  price         Float
+  discount      Float   @default(0)
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  product     Product     @relation(fields: [productId], references: [id])
+
+  @@map("transaction_items")
+}
+
+model Receipt {
+  id            String        @id @default(uuid())
+  transactionId String        @unique
+  receiptNumber String
+  format        ReceiptFormat @default(THERMAL)
+  emailSent     Boolean       @default(false)
+  whatsappSent  Boolean       @default(false)
+  pdfUrl        String?
+  createdAt     DateTime      @default(now())
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+
+  @@map("receipts")
+}
+
+model Message {
+  id         String        @id @default(uuid())
+  customerId String
+  userId     String?
+  channel    MessageChannel
+  content    String
+  status     MessageStatus @default(PENDING)
+  campaignId String?
+  createdAt  DateTime      @default(now())
+
+  customer Customer  @relation(fields: [customerId], references: [id])
+  user     User?     @relation(fields: [userId], references: [id])
+  campaign Campaign? @relation(fields: [campaignId], references: [id])
+
+  @@map("messages")
+}
+
+model Campaign {
+  id          String         @id @default(uuid())
+  name        String
+  description String?
+  channel     MessageChannel
+  template    String
+  segment     CustomerSegment?
+  status      CampaignStatus @default(DRAFT)
+  scheduledAt DateTime?
+  createdAt   DateTime       @default(now())
+  createdBy   String
+
+  creator  User      @relation(fields: [createdBy], references: [id])
+  messages Message[]
+
+  @@map("campaigns")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  action     String
+  resource   String
+  resourceId String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model Setting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  updatedBy   String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model AICache {
+  id        String   @id @default(uuid())
+  cacheKey  String   @unique
+  data      Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@map("ai_cache")
+}
+
+model StockAdjustment {
+  id        String              @id @default(uuid())
+  productId String
+  userId    String
+  type      StockAdjustmentType
+  quantity  Int
+  reason    String?
+  createdAt DateTime            @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@map("stock_adjustments")
+}
+
+model Machine {
+  id        String        @id @default(uuid())
+  name      String
+  status    MachineStatus @default(OFFLINE)
+  lastSeen  DateTime?
+  userId    String?
+  createdAt DateTime      @default(now())
+
+  @@map("machines")
+}
