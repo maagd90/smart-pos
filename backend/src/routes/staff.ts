@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import prisma from '../config/database';
 import { authenticate } from '../middleware/auth';
 import { shopIsolation } from '../middleware/shopIsolation';

@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../../services/api';
 import toast from 'react-hot-toast';
-import type { Offer } from '../../../types';
+import type { Offer, OfferType } from '../../../types';
 
 interface OffersResponse { offers: Offer[] }
 
-const EMPTY = { name: '', description: '', discount: '', type: 'PERCENTAGE' as const, isActive: true, startDate: '', endDate: '' };
+type FormState = { name: string; description: string; discount: string; type: OfferType; isActive: boolean; startDate: string; endDate: string };
+
+const EMPTY: FormState = { name: '', description: '', discount: '', type: 'PERCENTAGE', isActive: true, startDate: '', endDate: '' };
 
 export default function Offers() {
   const { shopId } = useParams<{ shopId: string }>();

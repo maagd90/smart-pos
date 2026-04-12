@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.npm
+
+# Build artifacts
+dist/
+build/
+backend/dist/
+
+# Environment variables (NEVER commit secrets)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Prisma generated client (regenerated from schema)
+# Keep schema.prisma but ignore generated client in non-root node_modules
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# TypeScript
+*.tsbuildinfo
+
+# Coverage
+coverage/
+
+# Temp files
+tmp/
+temp/
