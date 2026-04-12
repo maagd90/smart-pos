@@ -1,0 +1,215 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+  ANALYST
+}
+
+enum CustomerSegment {
+  VIP
+  REGULAR
+  INACTIVE
+  NEW
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  DIGITAL
+}
+
+enum TransactionStatus {
+  COMPLETED
+  REFUNDED
+  PARTIAL_REFUND
+}
+
+enum MessageChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  FAILED
+  PENDING
+}
+
+enum AIAnalyticsType {
+  DEMAND_FORECAST
+  CUSTOMER_SEGMENT
+  PRICE_SUGGESTION
+  TREND
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  name         String
+  role         Role     @default(CASHIER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  transactions Transaction[]
+  auditLogs    AuditLog[]
+
+  @@map("users")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  sku         String   @unique
+  description String?
+  price       Float
+  cost        Float    @default(0)
+  category    String
+  barcode     String?  @unique
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  inventory        Inventory?
+  transactionItems TransactionItem[]
+
+  @@map("products")
+}
+
+model Inventory {
+  id               String    @id @default(uuid())
+  productId        String    @unique
+  quantity         Int       @default(0)
+  reorderPoint     Int       @default(10)
+  reorderQuantity  Int       @default(50)
+  location         String?
+  expiryDate       DateTime?
+  batchNumber      String?
+  updatedAt        DateTime  @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("inventory")
+}
+
+model Customer {
+  id              String          @id @default(uuid())
+  name            String
+  phone           String?         @unique
+  email           String?         @unique
+  loyaltyPoints   Int             @default(0)
+  segment         CustomerSegment @default(NEW)
+  notes           String?
+  lastPurchaseAt  DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  transactions Transaction[]
+  messages     Message[]
+
+  @@map("customers")
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  customerId    String?
+  cashierId     String
+  total         Float
+  subtotal      Float
+  tax           Float             @default(0)
+  discount      Float             @default(0)
+  paymentMethod PaymentMethod     @default(CASH)
+  status        TransactionStatus @default(COMPLETED)
+  notes         String?
+  receiptNumber String            @unique
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  customer Customer?         @relation(fields: [customerId], references: [id])
+  cashier  User              @relation(fields: [cashierId], references: [id])
+  items    TransactionItem[]
+
+  @@map("transactions")
+}
+
+model TransactionItem {
+  id            String  @id @default(uuid())
+  transactionId String
+  productId     String
+  quantity      Int
+  unitPrice     Float
+  discount      Float   @default(0)
+  total         Float
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product     Product     @relation(fields: [productId], references: [id])
+
+  @@map("transaction_items")
+}
+
+model Message {
+  id         String        @id @default(uuid())
+  customerId String
+  channel    MessageChannel
+  content    String
+  status     MessageStatus @default(PENDING)
+  sentAt     DateTime?
+  templateId String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("messages")
+}
+
+model AIAnalytics {
+  id         String          @id @default(uuid())
+  type       AIAnalyticsType
+  data       Json
+  confidence Float           @default(0)
+  createdAt  DateTime        @default(now())
+
+  @@map("ai_analytics")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  oldData    Json?
+  newData    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model Settings {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
