@@ -1,6 +1,7 @@
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
+import { apiRateLimiter } from './middleware/rateLimiter';
 import authRoutes from './routes/auth';
 import shopRoutes from './routes/shops';
 import productRoutes from './routes/products';
@@ -19,10 +20,10 @@ app.get('/health', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/shops', shopRoutes);
-app.use('/api/shops/:shopId/products', productRoutes);
-app.use('/api/shops/:shopId/customers', customerRoutes);
-app.use('/api/shops/:shopId/transactions', transactionRoutes);
+app.use('/api/shops', apiRateLimiter, shopRoutes);
+app.use('/api/shops/:shopId/products', apiRateLimiter, productRoutes);
+app.use('/api/shops/:shopId/customers', apiRateLimiter, customerRoutes);
+app.use('/api/shops/:shopId/transactions', apiRateLimiter, transactionRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Route not found' });
