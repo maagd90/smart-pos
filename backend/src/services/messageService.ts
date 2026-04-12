@@ -36,7 +36,7 @@ export function getCustomerMessages(customerId: number): Message[] {
   return db.prepare(`
     SELECT m.*, c.name as customer_name
     FROM messages m
-    JOIN customers c ON m.customer_id = c.id
+    LEFT JOIN customers c ON m.customer_id = c.id
     WHERE m.customer_id = ?
     ORDER BY m.created_at DESC
   `).all(customerId) as Message[];
@@ -46,7 +46,7 @@ export function getAllMessages(): Message[] {
   return db.prepare(`
     SELECT m.*, c.name as customer_name
     FROM messages m
-    JOIN customers c ON m.customer_id = c.id
+    LEFT JOIN customers c ON m.customer_id = c.id
     ORDER BY m.created_at DESC
   `).all() as Message[];
 }
