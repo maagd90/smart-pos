@@ -32,6 +32,8 @@ export async function sendMessage(options: SendMessageOptions) {
   }
 
   if (!options.skipSpamCheck) {
+    const now = new Date();
+
     // Check message gap (7 days)
     const lastMessage = await prisma.message.findFirst({
       where: { customerId: options.customerId, channel: options.channel },
@@ -39,7 +41,7 @@ export async function sendMessage(options: SendMessageOptions) {
     });
 
     if (lastMessage) {
-      const gap = daysBetween(lastMessage.createdAt, new Date());
+      const gap = daysBetween(lastMessage.createdAt, now);
       if (gap < MESSAGE_GAP_DAYS) {
         throw createError(
           `Message sent too recently. Wait ${MESSAGE_GAP_DAYS - gap} more day(s)`,
@@ -49,7 +51,7 @@ export async function sendMessage(options: SendMessageOptions) {
     }
 
     // Check monthly limit
-    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const monthlyCount = await prisma.message.count({
       where: {
         customerId: options.customerId,

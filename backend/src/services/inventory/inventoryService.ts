@@ -54,16 +54,6 @@ export async function adjustStock(
   return updated;
 }
 
-export async function getLowStockAlerts() {
-  return prisma.product.findMany({
-    where: {
-      isActive: true,
-      stock: { lte: prisma.product.fields.minStock as unknown as number },
-    },
-    orderBy: { stock: 'asc' },
-  });
-}
-
 export async function getLowStockProducts() {
   const products = await prisma.product.findMany({
     where: { isActive: true },

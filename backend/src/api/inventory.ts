@@ -29,8 +29,14 @@ inventoryRouter.get('/products', paginationValidation, async (req: AuthRequest, 
         { sku: { contains: String(search), mode: 'insensitive' } },
       ];
     }
+
     if (lowStock === 'true') {
-      where.stock = { lte: prisma.product.fields.minStock };
+      // Fetch all active products and filter where stock <= minStock
+      const all = await prisma.product.findMany({ where, orderBy: { name: 'asc' } });
+      const filtered = all.filter((p) => p.stock <= p.minStock);
+      const paginated = filtered.slice(skip, skip + take);
+      res.json({ success: true, data: paginated, meta: buildPaginationMeta(filtered.length, page, limit) });
+      return;
     }
 
     const [products, total] = await Promise.all([

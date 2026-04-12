@@ -17,7 +17,9 @@ export const logger = winston.createLogger({
   ],
 });
 
-export const JWT_SECRET = process.env.JWT_SECRET || 'changeme';
+export const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production'
+  ? (() => { throw new Error('JWT_SECRET must be set in production'); })()
+  : 'changeme-dev-only');
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 export const BCRYPT_ROUNDS = 10;
