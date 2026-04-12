@@ -130,7 +130,7 @@ export const setupChargeApi = {
     return res.data.data;
   },
 
-  async getTenantRevenueSummary(tenantId: string): Promise<RemainingSetupFees> {
+  async getRemainingSetupFees(tenantId: string): Promise<RemainingSetupFees> {
     const res = await api.get('/api/tenant/revenue/summary', { params: { tenantId } });
     return res.data.data;
   },

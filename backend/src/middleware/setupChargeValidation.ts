@@ -11,12 +11,14 @@ export function validateSetupChargeStatus(
   next: NextFunction
 ): void {
   const { status } = req.body;
-  if (status && !VALID_STATUSES.includes(status as SetupChargeStatus)) {
-    res.status(400).json({
-      success: false,
-      error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}`,
-    });
-    return;
+  if (status !== undefined) {
+    if (typeof status !== 'string' || !VALID_STATUSES.includes(status as SetupChargeStatus)) {
+      res.status(400).json({
+        success: false,
+        error: `Invalid status. Must be one of: ${VALID_STATUSES.join(', ')}`,
+      });
+      return;
+    }
   }
   next();
 }

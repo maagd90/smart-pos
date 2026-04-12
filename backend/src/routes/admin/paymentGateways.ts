@@ -75,16 +75,17 @@ router.put(
       const { gatewayName } = req.params;
       const { setupFee, isAvailable } = req.body;
 
+      if (typeof setupFee !== 'number' && typeof isAvailable !== 'boolean') {
+        res.status(400).json({ success: false, error: 'No valid fields to update' });
+        return;
+      }
+
       let result;
       if (typeof setupFee === 'number') {
         result = await updateGatewayPricing(prisma, gatewayName, setupFee);
       }
       if (typeof isAvailable === 'boolean') {
         result = await toggleGatewayAvailability(prisma, gatewayName, isAvailable);
-      }
-      if (!result) {
-        res.status(400).json({ success: false, error: 'No valid fields to update' });
-        return;
       }
       res.json({ success: true, data: result });
     } catch (error) {

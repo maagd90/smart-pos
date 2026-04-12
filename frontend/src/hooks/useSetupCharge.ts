@@ -66,7 +66,7 @@ export function useTenantRevenueSummary(tenantId: string | null) {
     if (!tenantId) return;
     setLoading(true);
     try {
-      const data = await setupChargeApi.getTenantRevenueSummary(tenantId);
+      const data = await setupChargeApi.getRemainingSetupFees(tenantId);
       setSummary(data);
       setError(null);
     } catch (err: any) {
