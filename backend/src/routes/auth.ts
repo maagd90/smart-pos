@@ -80,8 +80,8 @@ router.post(
 
 router.post(
   '/logout',
-  authenticate,
   apiRateLimiter,
+  authenticate,
   [body('refreshToken').notEmpty()],
   handleValidationErrors,
   async (req: Request, res: Response) => {
