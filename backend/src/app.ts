@@ -7,6 +7,7 @@ import shopRoutes from './routes/shops';
 import productRoutes from './routes/products';
 import customerRoutes from './routes/customers';
 import transactionRoutes from './routes/transactions';
+import adminTenantRoutes from './routes/admin/tenants';
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/shops', apiRateLimiter, shopRoutes);
 app.use('/api/shops/:shopId/products', apiRateLimiter, productRoutes);
 app.use('/api/shops/:shopId/customers', apiRateLimiter, customerRoutes);
 app.use('/api/shops/:shopId/transactions', apiRateLimiter, transactionRoutes);
+app.use('/api/admin/tenants', apiRateLimiter, adminTenantRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, error: 'Route not found' });
