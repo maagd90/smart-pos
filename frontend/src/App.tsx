@@ -13,6 +13,8 @@ import Customers from './pages/Customers';
 import Products from './pages/Products';
 import WhatsAppWizard from './pages/WhatsAppWizard';
 import NotFound from './pages/NotFound';
+import TenantsList from './pages/admin/TenantsList';
+import TenantDetails from './pages/admin/TenantDetails';
 
 const App: React.FC = () => {
   return (
@@ -49,6 +51,9 @@ const App: React.FC = () => {
               <Route path="shop/:shopId/settings" element={<AdminPanel />} />
               <Route path="platform/shops" element={<Dashboard />} />
               <Route path="platform/settings" element={<Dashboard />} />
+              <Route path="platform/tenants" element={<TenantsList />} />
+              <Route path="platform/tenants/:id" element={<TenantDetails />} />
+              <Route path="platform/tenants/:id/edit" element={<TenantsList />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

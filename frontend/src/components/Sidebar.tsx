@@ -11,6 +11,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'All Shops', path: '/platform/shops', roles: ['platform_admin'] },
+  { label: 'Tenants', path: '/platform/tenants', roles: ['platform_admin'] },
   { label: 'System Settings', path: '/platform/settings', roles: ['platform_admin'] },
   { label: 'Dashboard', path: '/shop/:shopId/dashboard', roles: ['shop_admin', 'manager'] },
   { label: 'Products', path: '/shop/:shopId/products', roles: ['shop_admin', 'manager'] },

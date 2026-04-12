@@ -182,3 +182,67 @@ model RateLimit {
   resetAt   DateTime
   createdAt DateTime @default(now())
 }
+
+enum TenantStatus {
+  CREATING
+  ACTIVE
+  SUSPENDED
+  FAILED
+}
+
+enum SubscriptionPlan {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+model Tenant {
+  id                String           @id @default(cuid())
+  name              String
+  slug              String           @unique
+  domain            String           @unique
+  adminEmail        String
+  adminName         String
+  status            TenantStatus     @default(CREATING)
+  subscriptionPlan  SubscriptionPlan @default(FREE)
+  maxStaff          Int              @default(5)
+  ipWhitelist       String[]         @default([])
+  ipRestrictEnabled Boolean          @default(false)
+  aiEnabled         Boolean          @default(false)
+  whatsappEnabled   Boolean          @default(true)
+  smsEnabled        Boolean          @default(false)
+  emailEnabled      Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  setup   TenantSetup?
+  apiKeys TenantApiKey[]
+}
+
+model TenantSetup {
+  id           String    @id @default(cuid())
+  tenantId     String    @unique
+  currentStep  String    @default("PENDING")
+  steps        Json      @default("[]")
+  errorMessage String?
+  completedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model TenantApiKey {
+  id          String    @id @default(cuid())
+  tenantId    String
+  name        String
+  keyHash     String
+  keyPrefix   String
+  permissions String[]  @default([])
+  status      String    @default("ACTIVE")
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
