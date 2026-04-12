@@ -1,0 +1,217 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Shop {
+  id        String     @id @default(cuid())
+  name      String
+  slug      String     @unique
+  status    ShopStatus @default(ACTIVE)
+  plan      String     @default("basic")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  users     User[]
+  products  Product[]
+  customers Customer[]
+  orders    Order[]
+  messaging MessagingConfig?
+  offers    Offer[]
+  shortcuts Shortcut[]
+  auditLogs AuditLog[]
+}
+
+model User {
+  id          String    @id @default(cuid())
+  name        String
+  email       String    @unique
+  password    String
+  role        Role
+  shopId      String?
+  lockedUntil DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  shop          Shop?          @relation(fields: [shopId], references: [id])
+  refreshTokens RefreshToken[]
+  auditLogs     AuditLog[]
+  shortcuts     Shortcut[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TokenBlacklist {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  shopId      String
+  name        String
+  description String?
+  price       Float
+  cost        Float?
+  stock       Int      @default(0)
+  sku         String?
+  barcode     String?
+  category    String?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  shop       Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderItems OrderItem[]
+}
+
+model Customer {
+  id         String   @id @default(cuid())
+  shopId     String
+  name       String
+  email      String?
+  phone      String?
+  totalSpent Float    @default(0)
+  visitCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  shop   Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orders Order[]
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  shopId        String
+  customerId    String?
+  total         Float
+  discount      Float       @default(0)
+  tax           Float       @default(0)
+  status        OrderStatus @default(PENDING)
+  paymentMethod String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  shop     Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer Customer? @relation(fields: [customerId], references: [id])
+  items    OrderItem[]
+}
+
+model OrderItem {
+  id        String @id @default(cuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Float
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model MessagingConfig {
+  id             String   @id @default(cuid())
+  shopId         String   @unique
+  provider       String   @default("twilio")
+  accountSid     String?
+  authToken      String?
+  whatsappNumber String?
+  webhookUrl     String?
+  enabled        Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+model Offer {
+  id          String    @id @default(cuid())
+  shopId      String
+  name        String
+  description String?
+  discount    Float
+  type        OfferType
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  shop Shop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+model Shortcut {
+  id     String  @id @default(cuid())
+  userId String
+  shopId String?
+  label  String
+  icon   String
+  path   String
+  order  Int     @default(0)
+  custom Boolean @default(false)
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shop Shop? @relation(fields: [shopId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  shopId       String?
+  action       String
+  entityType   String?
+  entityId     String?
+  ipAddress    String?
+  userAgent    String?
+  status       String
+  statusCode   Int?
+  requestData  String?
+  responseData String?
+  createdAt    DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+  shop Shop? @relation(fields: [shopId], references: [id])
+}
+
+enum Role {
+  PLATFORM_ADMIN
+  SHOP_ADMIN
+  MANAGER
+  CASHIER
+  ANALYST
+}
+
+enum ShopStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum OfferType {
+  PERCENTAGE
+  FIXED
+  BUY_X_GET_Y
+}
