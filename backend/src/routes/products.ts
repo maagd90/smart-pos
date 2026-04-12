@@ -4,12 +4,13 @@ import { PrismaClient } from '@prisma/client';
 import { handleValidationErrors } from '../middleware/validation';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { requireMinRole } from '../middleware/rbac';
+import { apiRateLimiter } from '../middleware/rateLimiter';
 import { Role } from '../types';
 
 const router = Router({ mergeParams: true });
 const prisma = new PrismaClient();
 
-router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/', authenticate, apiRateLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const { shopId } = req.params;
     const page = parseInt(req.query.page as string) || 1;
@@ -37,6 +38,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 router.post(
   '/',
   authenticate,
+  apiRateLimiter,
   requireMinRole(Role.MANAGER),
   [
     body('name').trim().notEmpty(),
@@ -62,6 +64,7 @@ router.post(
 router.get(
   '/:productId',
   authenticate,
+  apiRateLimiter,
   [param('productId').notEmpty()],
   handleValidationErrors,
   async (req: AuthRequest, res: Response) => {
@@ -83,6 +86,7 @@ router.get(
 router.patch(
   '/:productId',
   authenticate,
+  apiRateLimiter,
   requireMinRole(Role.MANAGER),
   [param('productId').notEmpty()],
   handleValidationErrors,
@@ -102,6 +106,7 @@ router.patch(
 router.delete(
   '/:productId',
   authenticate,
+  apiRateLimiter,
   requireMinRole(Role.MANAGER),
   [param('productId').notEmpty()],
   handleValidationErrors,

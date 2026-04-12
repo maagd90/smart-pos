@@ -3,12 +3,13 @@ import { body, param } from 'express-validator';
 import { PrismaClient } from '@prisma/client';
 import { handleValidationErrors } from '../middleware/validation';
 import { authenticate, AuthRequest } from '../middleware/auth';
+import { apiRateLimiter } from '../middleware/rateLimiter';
 import { PaymentMethod } from '../types';
 
 const router = Router({ mergeParams: true });
 const prisma = new PrismaClient();
 
-router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/', authenticate, apiRateLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const { shopId } = req.params;
     const page = parseInt(req.query.page as string) || 1;
@@ -35,6 +36,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 router.post(
   '/',
   authenticate,
+  apiRateLimiter,
   [
     body('items').isArray({ min: 1 }),
     body('items.*.productId').notEmpty(),
@@ -109,6 +111,7 @@ router.post(
 router.get(
   '/:transactionId',
   authenticate,
+  apiRateLimiter,
   [param('transactionId').notEmpty()],
   handleValidationErrors,
   async (req: AuthRequest, res: Response) => {

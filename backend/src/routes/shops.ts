@@ -4,13 +4,14 @@ import { PrismaClient } from '@prisma/client';
 import { handleValidationErrors } from '../middleware/validation';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { requireRole } from '../middleware/rbac';
+import { apiRateLimiter } from '../middleware/rateLimiter';
 import { createShop, getShopById, updateShop, listShops } from '../services/shop';
 import { Role } from '../types';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/', authenticate, apiRateLimiter, async (req: AuthRequest, res: Response) => {
   try {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
@@ -24,6 +25,7 @@ router.get('/', authenticate, async (req: AuthRequest, res: Response) => {
 router.post(
   '/',
   authenticate,
+  apiRateLimiter,
   requireRole(Role.PLATFORM_ADMIN),
   [
     body('name').trim().notEmpty(),
@@ -44,6 +46,7 @@ router.post(
 router.get(
   '/:shopId',
   authenticate,
+  apiRateLimiter,
   [param('shopId').notEmpty()],
   handleValidationErrors,
   async (req: AuthRequest, res: Response) => {
@@ -63,6 +66,7 @@ router.get(
 router.patch(
   '/:shopId',
   authenticate,
+  apiRateLimiter,
   requireRole(Role.PLATFORM_ADMIN, Role.SHOP_ADMIN),
   [param('shopId').notEmpty()],
   handleValidationErrors,

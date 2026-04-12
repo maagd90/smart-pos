@@ -5,6 +5,7 @@ import { handleValidationErrors } from '../middleware/validation';
 import { authRateLimiter } from '../middleware/rateLimiter';
 import { authenticate, AuthRequest } from '../middleware/auth';
 import { loginUser, refreshAccessToken, revokeRefreshToken, hashPassword } from '../services/auth';
+import { apiRateLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -80,6 +81,7 @@ router.post(
 router.post(
   '/logout',
   authenticate,
+  apiRateLimiter,
   [body('refreshToken').notEmpty()],
   handleValidationErrors,
   async (req: Request, res: Response) => {
