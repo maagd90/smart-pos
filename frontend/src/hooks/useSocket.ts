@@ -28,7 +28,7 @@ export function useSocket(events?: Record<string, (data: unknown) => void>) {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [token, events]);
 
   return socketRef;
 }

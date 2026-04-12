@@ -4,20 +4,19 @@ import { AppError } from '../middleware/errorHandler';
 import { SendMessageDto, CreateCampaignDto, PaginationQuery, PaginatedResponse } from '../types';
 import { MessageChannel, MessageStatus, CustomerSegment } from '@prisma/client';
 import { logger } from '../config/logger';
-
-function getTwilioClient() {
-  if (!env.twilio.accountSid || !env.twilio.authToken) {
-    throw new AppError('Twilio credentials not configured', 503);
-  }
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const twilio = require('twilio') as (sid: string, token: string) => TwilioClient;
-  return twilio(env.twilio.accountSid, env.twilio.authToken);
-}
+import twilio from 'twilio';
 
 interface TwilioClient {
   messages: {
     create: (params: { from: string; to: string; body: string }) => Promise<{ sid: string }>;
   };
+}
+
+function getTwilioClient(): TwilioClient {
+  if (!env.twilio.accountSid || !env.twilio.authToken) {
+    throw new AppError('Twilio credentials not configured', 503);
+  }
+  return twilio(env.twilio.accountSid, env.twilio.authToken) as unknown as TwilioClient;
 }
 
 async function sendViaTwilio(

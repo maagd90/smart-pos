@@ -42,7 +42,7 @@ export function ProductSearch({ onAddProduct }: ProductSearchProps) {
   useEffect(() => {
     const t = setTimeout(fetchProducts, 300);
     return () => clearTimeout(t);
-  }, [search, category, page]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [search, category, page, fetchProducts]);
 
   const handleBarcodeSearch = async (barcode: string) => {
     if (!barcode.trim()) return;

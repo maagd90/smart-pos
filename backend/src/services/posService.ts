@@ -113,14 +113,11 @@ export async function getTransactions(
   const limit = parseInt(query.limit ?? '20', 10);
   const skip = (page - 1) * limit;
 
+  const createdAtFilter: { gte?: Date; lte?: Date } = {};
+  if (query.startDate) createdAtFilter.gte = new Date(query.startDate);
+  if (query.endDate) createdAtFilter.lte = new Date(query.endDate);
   const where: Record<string, unknown> = {};
-  if (query.startDate) where['createdAt'] = { gte: new Date(query.startDate) };
-  if (query.endDate) {
-    where['createdAt'] = {
-      ...(where['createdAt'] as object ?? {}),
-      lte: new Date(query.endDate),
-    };
-  }
+  if (createdAtFilter.gte || createdAtFilter.lte) where['createdAt'] = createdAtFilter;
   if (query.cashierId) where['cashierId'] = query.cashierId;
 
   const [data, total] = await Promise.all([
