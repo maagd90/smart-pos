@@ -1,0 +1,55 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: smartpos
+      POSTGRES_PASSWORD: smartpos
+      POSTGRES_DB: smartpos
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartpos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: ./backend
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://smartpos:smartpos@postgres:5432/smartpos
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: change-this-in-production
+      FRONTEND_URL: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend/.env:/app/.env
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:3001
+      REACT_APP_SOCKET_URL: http://localhost:3001
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
