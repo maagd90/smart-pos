@@ -7,6 +7,7 @@ import useNetworkStatus from '../hooks/useNetworkStatus';
 const getUserInitials = (name: string): string =>
   name
     .split(' ')
+    .filter((n) => n.length > 0)
     .map((n) => n[0])
     .slice(0, 2)
     .join('')
@@ -139,7 +140,7 @@ const Layout: React.FC = () => {
                 </span>
                 <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.3 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{user.name}</span>
-                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>{ROLE_LABELS[user.role] ?? user.role}</span>
+                  <span style={{ fontSize: 11, color: 'var(--muted)' }}>{ROLE_LABELS[user.role] ?? user.role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}</span>
                 </span>
                 <span aria-hidden="true" style={{ color: 'var(--muted)', fontSize: 10, marginLeft: 2 }}>▾</span>
               </button>
