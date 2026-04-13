@@ -42,10 +42,11 @@ export function useSyncQueue(): SyncQueueState {
 
   const enqueue = useCallback(
     (req: Omit<QueuedRequest, 'id' | 'timestamp' | 'retries'>) => {
+      const now = Date.now();
       const entry: QueuedRequest = {
         ...req,
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        timestamp: Date.now(),
+        id: `${now}-${Math.random().toString(36).slice(2)}`,
+        timestamp: now,
         retries: 0,
       };
       setQueue((prev) => {

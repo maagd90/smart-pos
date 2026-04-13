@@ -24,6 +24,7 @@ const UserMenu: React.FC = () => {
 
   const initials = displayUser.name
     .split(' ')
+    .filter((n) => n.length > 0)
     .map((n) => n[0])
     .join('')
     .toUpperCase()

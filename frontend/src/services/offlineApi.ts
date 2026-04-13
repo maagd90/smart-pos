@@ -59,7 +59,8 @@ function saveQueue(q: QueuedItem[]): void {
 
 function addToQueue(item: Omit<QueuedItem, 'id' | 'timestamp'>): void {
   const q = loadQueue();
-  q.push({ ...item, id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, timestamp: Date.now() });
+  const now = Date.now();
+  q.push({ ...item, id: `${now}-${Math.random().toString(36).slice(2)}`, timestamp: now });
   saveQueue(q);
 }
 
