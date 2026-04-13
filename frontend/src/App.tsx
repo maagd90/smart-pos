@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ShopProvider } from './contexts/ShopContext';
+import { OfflineProvider } from './context/OfflineContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Login from './pages/Login';
@@ -18,48 +19,50 @@ import TenantDetails from './pages/admin/TenantDetails';
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <ShopProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Layout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="shop/:shopId/dashboard" element={<Dashboard />} />
-              <Route path="shop/:shopId/pos" element={<POS />} />
+    <OfflineProvider>
+      <AuthProvider>
+        <ShopProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
               <Route
-                path="shop/:shopId/admin"
+                path="/"
                 element={
-                  <ProtectedRoute allowedRoles={['shop_admin', 'platform_admin']}>
-                    <AdminPanel />
+                  <ProtectedRoute>
+                    <Layout />
                   </ProtectedRoute>
                 }
-              />
-              <Route path="shop/:shopId/analytics" element={<Analytics />} />
-              <Route path="shop/:shopId/customers" element={<Customers />} />
-              <Route path="shop/:shopId/products" element={<Products />} />
-              <Route path="shop/:shopId/whatsapp" element={<WhatsAppWizard />} />
-              <Route path="shop/:shopId/staff" element={<AdminPanel />} />
-              <Route path="shop/:shopId/settings" element={<AdminPanel />} />
-              <Route path="platform/shops" element={<Dashboard />} />
-              <Route path="platform/settings" element={<Dashboard />} />
-              <Route path="platform/tenants" element={<TenantsList />} />
-              <Route path="platform/tenants/:id" element={<TenantDetails />} />
-              <Route path="platform/tenants/:id/edit" element={<TenantsList />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </ShopProvider>
-    </AuthProvider>
+              >
+                <Route index element={<Navigate to="/dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="shop/:shopId/dashboard" element={<Dashboard />} />
+                <Route path="shop/:shopId/pos" element={<POS />} />
+                <Route
+                  path="shop/:shopId/admin"
+                  element={
+                    <ProtectedRoute allowedRoles={['shop_admin', 'platform_admin']}>
+                      <AdminPanel />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="shop/:shopId/analytics" element={<Analytics />} />
+                <Route path="shop/:shopId/customers" element={<Customers />} />
+                <Route path="shop/:shopId/products" element={<Products />} />
+                <Route path="shop/:shopId/whatsapp" element={<WhatsAppWizard />} />
+                <Route path="shop/:shopId/staff" element={<AdminPanel />} />
+                <Route path="shop/:shopId/settings" element={<AdminPanel />} />
+                <Route path="platform/shops" element={<Dashboard />} />
+                <Route path="platform/settings" element={<Dashboard />} />
+                <Route path="platform/tenants" element={<TenantsList />} />
+                <Route path="platform/tenants/:id" element={<TenantDetails />} />
+                <Route path="platform/tenants/:id/edit" element={<TenantsList />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </ShopProvider>
+      </AuthProvider>
+    </OfflineProvider>
   );
 };
 
