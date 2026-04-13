@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import AuthContext from '../contexts/AuthContext';
-import ShopContext from '../contexts/ShopContext';
-import { User, Shop } from '../types';
+import AuthContext from './contexts/AuthContext';
+import ShopContext from './contexts/ShopContext';
+import { User, Shop } from './types';
 
 interface WrapperOptions {
   user?: User | null;

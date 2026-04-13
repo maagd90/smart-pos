@@ -48,7 +48,7 @@ const StaffModal: React.FC<StaffModalProps> = ({ initial, onSave, onCancel, erro
         display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
       }}
     >
-      <div style={{ background: '#fff', borderRadius: 12, padding: 32, width: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
+      <div style={{ background: 'var(--panel)', borderRadius: 12, padding: 32, width: 400, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }}>
         <h2 style={{ margin: '0 0 20px', fontSize: 18 }}>{initial ? 'Edit Staff' : 'Add Staff'}</h2>
         {error && (
           <div role="alert" style={{ color: '#dc2626', background: '#fef2f2', padding: '8px 12px', borderRadius: 8, marginBottom: 14, fontSize: 13 }}>
@@ -62,7 +62,7 @@ const StaffModal: React.FC<StaffModalProps> = ({ initial, onSave, onCancel, erro
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Full name"
-              style={{ width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }}
             />
             {nameError && <p role="alert" style={{ color: '#dc2626', fontSize: 12, margin: '4px 0 0' }}>{nameError}</p>}
           </div>
@@ -73,7 +73,7 @@ const StaffModal: React.FC<StaffModalProps> = ({ initial, onSave, onCancel, erro
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="staff@shop.com"
-              style={{ width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14, boxSizing: 'border-box' }}
             />
             {emailError && <p role="alert" style={{ color: '#dc2626', fontSize: 12, margin: '4px 0 0' }}>{emailError}</p>}
           </div>
@@ -82,7 +82,7 @@ const StaffModal: React.FC<StaffModalProps> = ({ initial, onSave, onCancel, erro
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              style={{ width: '100%', padding: '8px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 14 }}
+              style={{ width: '100%', padding: '8px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 14 }}
             >
               {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
@@ -90,14 +90,14 @@ const StaffModal: React.FC<StaffModalProps> = ({ initial, onSave, onCancel, erro
           <div style={{ display: 'flex', gap: 10 }}>
             <button
               type="submit"
-              style={{ flex: 1, padding: 10, background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
+              style={{ flex: 1, padding: 10, background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}
             >
               Save
             </button>
             <button
               type="button"
               onClick={onCancel}
-              style={{ flex: 1, padding: 10, background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+              style={{ flex: 1, padding: 10, background: 'var(--bg)', color: 'var(--text)', border: 'none', borderRadius: 8, cursor: 'pointer' }}
             >
               Cancel
             </button>
@@ -196,21 +196,21 @@ const AdminPanel: React.FC = () => {
           { label: 'Monthly Revenue', value: '$8,200' },
           { label: 'Staff Count', value: String(staffList.length) },
         ].map((kpi) => (
-          <div key={kpi.label} style={{ background: '#fff', borderRadius: 10, padding: 18, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            <div style={{ fontSize: 12, color: '#6b7280' }}>{kpi.label}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#1e1b4b', marginTop: 4 }}>{kpi.value}</div>
+          <div key={kpi.label} style={{ background: 'var(--panel)', borderRadius: 12, padding: 18, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+            <div style={{ fontSize: 12, color: 'var(--muted)' }}>{kpi.label}</div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', marginTop: 4 }}>{kpi.value}</div>
           </div>
         ))}
       </div>
 
       {/* Staff Management */}
-      <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+      <div style={{ background: 'var(--panel)', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Staff Management</h2>
           <div style={{ display: 'flex', gap: 10 }}>
             <button
               onClick={() => { setShowModal(true); setEditingStaff(undefined); setModalError(''); }}
-              style={{ padding: '8px 16px', background: '#4f46e5', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
+              style={{ padding: '8px 16px', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 13 }}
             >
               + Add Staff
             </button>
@@ -238,17 +238,17 @@ const AdminPanel: React.FC = () => {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <th style={{ textAlign: 'left', padding: '8px 12px', color: '#6b7280', fontWeight: 600 }}>Name</th>
-                <th style={{ textAlign: 'left', padding: '8px 12px', color: '#6b7280', fontWeight: 600 }}>Email</th>
-                <th style={{ textAlign: 'left', padding: '8px 12px', color: '#6b7280', fontWeight: 600 }}>Role</th>
-                <th style={{ textAlign: 'right', padding: '8px 12px', color: '#6b7280', fontWeight: 600 }}>Actions</th>
+                <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--muted)', fontWeight: 600 }}>Name</th>
+                <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--muted)', fontWeight: 600 }}>Email</th>
+                <th style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--muted)', fontWeight: 600 }}>Role</th>
+                <th style={{ textAlign: 'right', padding: '8px 12px', color: 'var(--muted)', fontWeight: 600 }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {staffList.map((staff) => (
                 <tr key={staff.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                   <td style={{ padding: '10px 12px' }}>{staff.name}</td>
-                  <td style={{ padding: '10px 12px', color: '#6b7280' }}>{staff.email}</td>
+                  <td style={{ padding: '10px 12px', color: 'var(--muted)' }}>{staff.email}</td>
                   <td style={{ padding: '10px 12px' }}>
                     <span style={{ background: '#ede9fe', color: '#5b21b6', borderRadius: 99, padding: '2px 10px', fontSize: 12 }}>
                       {staff.role}
@@ -298,7 +298,7 @@ const AdminPanel: React.FC = () => {
             display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
           }}
         >
-          <div style={{ background: '#fff', borderRadius: 12, padding: 28, width: 340, textAlign: 'center' }}>
+          <div style={{ background: 'var(--panel)', borderRadius: 12, padding: 28, width: 340, textAlign: 'center' }}>
             <p style={{ fontSize: 16, marginBottom: 20 }}>
               Delete <strong>{deleteTarget.name}</strong>?
             </p>
@@ -311,7 +311,7 @@ const AdminPanel: React.FC = () => {
               </button>
               <button
                 onClick={() => setDeleteTarget(null)}
-                style={{ padding: '8px 20px', background: '#f3f4f6', border: 'none', borderRadius: 8, cursor: 'pointer' }}
+                style={{ padding: '8px 20px', background: 'var(--bg)', border: 'none', borderRadius: 8, cursor: 'pointer' }}
               >
                 Cancel
               </button>

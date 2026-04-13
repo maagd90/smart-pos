@@ -103,14 +103,14 @@ const POS: React.FC = () => {
         <div
           data-testid="receipt"
           style={{
-            background: '#fff',
-            borderRadius: 12,
+            background: 'var(--panel)',
+            borderRadius: 14,
             padding: 32,
             boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
           }}
         >
           <h2 style={{ color: '#16a34a', margin: '0 0 16px' }}>✓ Receipt</h2>
-          <p style={{ color: '#6b7280', fontSize: 13 }}>Order ID: {receipt.id || 'ORD-001'}</p>
+          <p style={{ color: 'var(--muted)', fontSize: 13 }}>Order ID: {receipt.id || 'ORD-001'}</p>
           {receipt.items.map((item: CartItem) => (
             <div key={item.product.id} style={{ display: 'flex', justifyContent: 'space-between', margin: '8px 0', fontSize: 14 }}>
               <span>{item.product.name} × {item.quantity}</span>
@@ -126,7 +126,7 @@ const POS: React.FC = () => {
               marginTop: 20,
               width: '100%',
               padding: 10,
-              background: '#4f46e5',
+              background: 'var(--primary)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
@@ -155,7 +155,7 @@ const POS: React.FC = () => {
             style={{
               flex: 1,
               padding: '8px 12px',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               fontSize: 14,
             }}
@@ -166,7 +166,7 @@ const POS: React.FC = () => {
             onChange={(e) => setSelectedCategory(e.target.value)}
             style={{
               padding: '8px 12px',
-              border: '1px solid #d1d5db',
+              border: '1px solid var(--border)',
               borderRadius: 8,
               fontSize: 14,
             }}
@@ -199,7 +199,7 @@ const POS: React.FC = () => {
               aria-label={`Add ${product.name} to cart`}
               aria-disabled={product.stock === 0}
               style={{
-                background: '#fff',
+                background: 'var(--panel)',
                 border: '1px solid #e5e7eb',
                 borderRadius: 10,
                 padding: 14,
@@ -224,8 +224,8 @@ const POS: React.FC = () => {
       <div
         style={{
           width: 320,
-          background: '#fff',
-          borderRadius: 12,
+          background: 'var(--panel)',
+          borderRadius: 14,
           padding: 16,
           display: 'flex',
           flexDirection: 'column',
@@ -238,7 +238,7 @@ const POS: React.FC = () => {
           aria-label="Select customer"
           value={selectedCustomerId}
           onChange={(e) => setSelectedCustomerId(e.target.value)}
-          style={{ padding: '7px 10px', border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13, marginBottom: 12 }}
+          style={{ padding: '7px 10px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, marginBottom: 12 }}
         >
           <option value="">-- Select Customer (optional) --</option>
           {MOCK_CUSTOMERS.map((c) => (
@@ -265,7 +265,7 @@ const POS: React.FC = () => {
                   <button
                     aria-label={`Decrease quantity of ${item.product.name}`}
                     onClick={() => updateQuantity(item.product.id, -1)}
-                    style={{ width: 24, height: 24, border: '1px solid #d1d5db', borderRadius: 4, background: '#f9fafb', cursor: 'pointer' }}
+                    style={{ width: 24, height: 24, border: '1px solid var(--border)', borderRadius: 4, background: 'var(--panel-soft)', cursor: 'pointer' }}
                   >
                     −
                   </button>
@@ -273,7 +273,7 @@ const POS: React.FC = () => {
                   <button
                     aria-label={`Increase quantity of ${item.product.name}`}
                     onClick={() => updateQuantity(item.product.id, 1)}
-                    style={{ width: 24, height: 24, border: '1px solid #d1d5db', borderRadius: 4, background: '#f9fafb', cursor: 'pointer' }}
+                    style={{ width: 24, height: 24, border: '1px solid var(--border)', borderRadius: 4, background: 'var(--panel-soft)', cursor: 'pointer' }}
                   >
                     +
                   </button>
@@ -307,7 +307,7 @@ const POS: React.FC = () => {
               max={100}
               value={discount}
               onChange={(e) => setDiscount(Number(e.target.value))}
-              style={{ width: 60, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13 }}
+              style={{ width: 60, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13 }}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: 13 }}>
@@ -318,7 +318,7 @@ const POS: React.FC = () => {
               min={0}
               value={tax}
               onChange={(e) => setTax(Number(e.target.value))}
-              style={{ width: 60, padding: '4px 8px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 13 }}
+              style={{ width: 60, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 13 }}
             />
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 16, marginBottom: 12 }}>

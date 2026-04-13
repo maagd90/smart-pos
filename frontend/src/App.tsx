@@ -11,6 +11,9 @@ import AdminPanel from './pages/AdminPanel';
 import Analytics from './pages/Analytics';
 import Customers from './pages/Customers';
 import Products from './pages/Products';
+import Inventory from './pages/Inventory';
+import Transactions from './pages/Transactions';
+import Settings from './pages/Settings';
 import WhatsAppWizard from './pages/WhatsAppWizard';
 import NotFound from './pages/NotFound';
 import TenantsList from './pages/admin/TenantsList';
@@ -46,9 +49,11 @@ const App: React.FC = () => {
               <Route path="shop/:shopId/analytics" element={<Analytics />} />
               <Route path="shop/:shopId/customers" element={<Customers />} />
               <Route path="shop/:shopId/products" element={<Products />} />
+              <Route path="shop/:shopId/inventory" element={<Inventory />} />
+              <Route path="shop/:shopId/transactions" element={<Transactions />} />
               <Route path="shop/:shopId/whatsapp" element={<WhatsAppWizard />} />
               <Route path="shop/:shopId/staff" element={<AdminPanel />} />
-              <Route path="shop/:shopId/settings" element={<AdminPanel />} />
+              <Route path="shop/:shopId/settings" element={<Settings />} />
               <Route path="platform/shops" element={<Dashboard />} />
               <Route path="platform/settings" element={<Dashboard />} />
               <Route path="platform/tenants" element={<TenantsList />} />
