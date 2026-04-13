@@ -59,23 +59,23 @@ const Login: React.FC = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f1f5f9',
+        background: 'var(--bg)',
       }}
     >
       <div
         style={{
-          background: '#fff',
-          borderRadius: 12,
+          background: 'var(--panel)',
+          borderRadius: 'var(--radius)',
           padding: 40,
           width: '100%',
           maxWidth: 420,
-          boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+          boxShadow: '0 4px 24px rgba(16,35,60,0.10)',
         }}
       >
-        <h1 style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 700, color: '#1e1b4b' }}>
+        <h1 style={{ margin: '0 0 8px', fontSize: 24, fontWeight: 700, color: 'var(--text)' }}>
           Smart POS
         </h1>
-        <p style={{ margin: '0 0 28px', color: '#6b7280', fontSize: 14 }}>
+        <p style={{ margin: '0 0 28px', color: 'var(--muted)', fontSize: 14 }}>
           Sign in to your account
         </p>
 
@@ -87,7 +87,7 @@ const Login: React.FC = () => {
               border: '1px solid #fca5a5',
               borderRadius: 8,
               padding: '10px 14px',
-              color: '#dc2626',
+              color: 'var(--danger)',
               fontSize: 14,
               marginBottom: 20,
             }}
@@ -100,7 +100,7 @@ const Login: React.FC = () => {
           <div style={{ marginBottom: 18 }}>
             <label
               htmlFor="email"
-              style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6, color: '#374151' }}
+              style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6, color: 'var(--text)' }}
             >
               Email
             </label>
@@ -114,15 +114,17 @@ const Login: React.FC = () => {
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                border: `1px solid ${emailError ? '#f87171' : '#d1d5db'}`,
+                border: `1px solid ${emailError ? '#f87171' : 'var(--border)'}`,
                 borderRadius: 8,
                 fontSize: 14,
                 outline: 'none',
                 boxSizing: 'border-box',
+                background: 'var(--panel-soft)',
+                color: 'var(--text)',
               }}
             />
             {emailError && (
-              <p role="alert" style={{ color: '#dc2626', fontSize: 12, margin: '4px 0 0' }}>
+              <p role="alert" style={{ color: 'var(--danger)', fontSize: 12, margin: '4px 0 0' }}>
                 {emailError}
               </p>
             )}
@@ -131,7 +133,7 @@ const Login: React.FC = () => {
           <div style={{ marginBottom: 24 }}>
             <label
               htmlFor="password"
-              style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6, color: '#374151' }}
+              style={{ display: 'block', fontSize: 14, fontWeight: 500, marginBottom: 6, color: 'var(--text)' }}
             >
               Password
             </label>
@@ -146,11 +148,13 @@ const Login: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: '10px 40px 10px 12px',
-                  border: `1px solid ${passwordError ? '#f87171' : '#d1d5db'}`,
+                  border: `1px solid ${passwordError ? '#f87171' : 'var(--border)'}`,
                   borderRadius: 8,
                   fontSize: 14,
                   outline: 'none',
                   boxSizing: 'border-box',
+                  background: 'var(--panel-soft)',
+                  color: 'var(--text)',
                 }}
               />
               <button
@@ -165,7 +169,7 @@ const Login: React.FC = () => {
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
-                  color: '#6b7280',
+                  color: 'var(--muted)',
                   fontSize: 14,
                   padding: 0,
                 }}
@@ -174,7 +178,7 @@ const Login: React.FC = () => {
               </button>
             </div>
             {passwordError && (
-              <p role="alert" style={{ color: '#dc2626', fontSize: 12, margin: '4px 0 0' }}>
+              <p role="alert" style={{ color: 'var(--danger)', fontSize: 12, margin: '4px 0 0' }}>
                 {passwordError}
               </p>
             )}
@@ -186,7 +190,7 @@ const Login: React.FC = () => {
             style={{
               width: '100%',
               padding: '11px',
-              background: isLoading ? '#a5b4fc' : '#4f46e5',
+              background: isLoading ? '#93c5fd' : 'var(--primary)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
