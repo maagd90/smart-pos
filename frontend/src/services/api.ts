@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { setOfflineApiToken } from './offlineApi';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000/api',
@@ -12,6 +13,7 @@ let authToken: string | null = null;
 
 export const setAuthToken = (token: string | null) => {
   authToken = token;
+  setOfflineApiToken(token);
 };
 
 api.interceptors.request.use((config) => {
