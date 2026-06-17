@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartpos.inventory.domain.InventoryMovement;
 import com.smartpos.inventory.domain.InventoryMovementRepository;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
@@ -18,14 +20,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class InventoryEventConsumer {
 
+    private static final Logger log = LoggerFactory.getLogger(InventoryEventConsumer.class);
+
     private final InventoryMovementRepository movementRepository;
     private final ObjectMapper objectMapper;
     private final boolean allowNegativeStock;
 
     public InventoryEventConsumer(InventoryMovementRepository movementRepository,
+                                  ObjectMapper objectMapper,
                                   @Value("${inventory.allow-negative-stock:false}") boolean allowNegativeStock) {
         this.movementRepository = movementRepository;
-        this.objectMapper = new ObjectMapper();
+        this.objectMapper = objectMapper;
         this.allowNegativeStock = allowNegativeStock;
     }
 
@@ -46,9 +51,8 @@ public class InventoryEventConsumer {
                 if (!allowNegativeStock) {
                     int currentStock = movementRepository.calculateStock(storeId, productId);
                     if (currentStock - quantity < 0) {
-                        System.err.println("WARNING: Sale " + saleId + " would cause negative stock for product "
-                                + productId + ". Current: " + currentStock + ", sale qty: " + quantity
-                                + ". Processing anyway (sale already committed).");
+                        log.warn("Sale {} would cause negative stock for product {}. Current: {}, sale qty: {}. Processing anyway (sale already committed).",
+                                saleId, productId, currentStock, quantity);
                     }
                 }
 
@@ -57,7 +61,7 @@ public class InventoryEventConsumer {
                 movementRepository.save(movement);
             }
         } catch (Exception e) {
-            System.err.println("ERROR processing sale.created event: " + e.getMessage());
+            log.error("Error processing sale.created event: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to process sale.created event", e);
         }
     }
@@ -80,7 +84,7 @@ public class InventoryEventConsumer {
                 movementRepository.save(movement);
             }
         } catch (Exception e) {
-            System.err.println("ERROR processing refund.created event: " + e.getMessage());
+            log.error("Error processing refund.created event: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to process refund.created event", e);
         }
     }

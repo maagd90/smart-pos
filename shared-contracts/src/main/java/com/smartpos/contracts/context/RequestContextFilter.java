@@ -43,6 +43,10 @@ public class RequestContextFilter implements Filter {
     public static final String HEADER_PERMISSIONS = "X-Permissions";
     /** Header name for the request correlation identifier. */
     public static final String HEADER_CORRELATION_ID = "X-Correlation-Id";
+    /** Header name for account-wide access flag. */
+    public static final String HEADER_ACCOUNT_WIDE_ACCESS = "X-Account-Wide-Access";
+    /** Header name for comma-separated accessible store IDs. */
+    public static final String HEADER_ACCESSIBLE_STORES = "X-Accessible-Stores";
 
     /**
      * Extracts tenant context from gateway-forwarded headers and populates
@@ -54,11 +58,6 @@ public class RequestContextFilter implements Filter {
      * @throws IOException if an I/O error occurs
      * @throws ServletException if a servlet error occurs
      */
-    /** Header name for account-wide access flag. */
-    public static final String HEADER_ACCOUNT_WIDE_ACCESS = "X-Account-Wide-Access";
-    /** Header name for comma-separated accessible store IDs. */
-    public static final String HEADER_ACCESSIBLE_STORES = "X-Accessible-Stores";
-
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {

@@ -11,9 +11,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 public class SecurityWebMvcConfigurer implements WebMvcConfigurer {
 
+    private final SecurityInterceptor securityInterceptor;
+
+    public SecurityWebMvcConfigurer() {
+        this.securityInterceptor = new SecurityInterceptor();
+    }
+
+    public SecurityWebMvcConfigurer(SecurityInterceptor securityInterceptor) {
+        this.securityInterceptor = securityInterceptor;
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new SecurityInterceptor())
+        registry.addInterceptor(securityInterceptor)
                 .addPathPatterns("/api/**");
     }
 }

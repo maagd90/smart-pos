@@ -19,8 +19,9 @@ public class CatalogClient {
     private final RestTemplate restTemplate;
     private final String catalogBaseUrl;
 
-    public CatalogClient(@Value("${integration.catalog-service.url:http://catalog-pricing-service:8104}") String catalogBaseUrl) {
-        this.restTemplate = new RestTemplate();
+    public CatalogClient(RestTemplate restTemplate,
+                        @Value("${integration.catalog-service.url:http://catalog-pricing-service:8104}") String catalogBaseUrl) {
+        this.restTemplate = restTemplate;
         this.catalogBaseUrl = catalogBaseUrl;
     }
 

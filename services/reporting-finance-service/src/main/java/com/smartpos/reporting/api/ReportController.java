@@ -42,13 +42,14 @@ public class ReportController {
     private final RestTemplate restTemplate;
 
     public ReportController(
+            RestTemplate restTemplate,
             @Value("${integration.sales-service.url:http://sales-service:8106}") String salesServiceUrl,
             @Value("${integration.refunds-service.url:http://refunds-service:8107}") String refundsServiceUrl,
             @Value("${integration.tenant-service.url:http://tenant-admin-service:8102}") String tenantServiceUrl) {
         this.salesServiceUrl = salesServiceUrl;
         this.refundsServiceUrl = refundsServiceUrl;
         this.tenantServiceUrl = tenantServiceUrl;
-        this.restTemplate = new RestTemplate();
+        this.restTemplate = restTemplate;
     }
 
     /**
@@ -69,8 +70,9 @@ public class ReportController {
                     .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required")));
         }
 
-        // Resolve store timezone
-        ZoneId storeTimezone = resolveStoreTimezone(storeId, context.accountId());
+        // Resolve store timezone and currency from tenant service
+        StoreConfig storeConfig = resolveStoreConfig(storeId, context.accountId());
+        ZoneId storeTimezone = storeConfig.timezone();
         LocalDate reportDate = date != null ? LocalDate.parse(date) : LocalDate.now(storeTimezone);
 
         // Compute date boundaries in UTC for querying
@@ -82,7 +84,7 @@ public class ReportController {
         BigDecimal revenue = BigDecimal.ZERO;
         BigDecimal cogs = BigDecimal.ZERO;
         BigDecimal refundsTotal = BigDecimal.ZERO;
-        String currency = "AED"; // Will be overridden from actual data if available
+        String currency = storeConfig.currency();
 
         // Fetch sales within date range
         try {
@@ -149,10 +151,10 @@ public class ReportController {
     }
 
     /**
-     * Resolves the store timezone from the tenant service.
-     * Falls back to Asia/Dubai if unavailable.
+     * Resolves the store timezone and currency from the tenant service.
+     * Falls back to Asia/Dubai timezone and USD currency if unavailable.
      */
-    private ZoneId resolveStoreTimezone(UUID storeId, UUID accountId) {
+    private StoreConfig resolveStoreConfig(UUID storeId, UUID accountId) {
         try {
             String url = tenantServiceUrl + "/api/v1/accounts/" + accountId + "/stores";
             @SuppressWarnings("unchecked")
@@ -162,16 +164,19 @@ public class ReportController {
                     if (store instanceof Map<?, ?> storeMap) {
                         if (storeId.toString().equals(storeMap.get("id"))) {
                             Object tz = storeMap.get("timezone");
-                            if (tz != null) {
-                                return ZoneId.of(tz.toString());
-                            }
+                            Object cur = storeMap.get("currency");
+                            ZoneId timezone = tz != null ? ZoneId.of(tz.toString()) : ZoneId.of("Asia/Dubai");
+                            String currency = cur != null ? cur.toString() : "USD";
+                            return new StoreConfig(timezone, currency);
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            System.err.println("Warning: Could not resolve store timezone: " + e.getMessage());
+            // Fallback if tenant service is unreachable
         }
-        return ZoneId.of("Asia/Dubai");
+        return new StoreConfig(ZoneId.of("Asia/Dubai"), "USD");
     }
+
+    private record StoreConfig(ZoneId timezone, String currency) {}
 }

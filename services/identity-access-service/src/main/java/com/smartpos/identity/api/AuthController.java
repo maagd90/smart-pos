@@ -47,13 +47,14 @@ public class AuthController {
                           RefreshTokenRepository refreshTokenRepository,
                           UserRoleRepository userRoleRepository,
                           PermissionRepository permissionRepository,
-                          AuthTokenService tokenService) {
+                          AuthTokenService tokenService,
+                          BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRoleRepository = userRoleRepository;
         this.permissionRepository = permissionRepository;
         this.tokenService = tokenService;
-        this.passwordEncoder = new BCryptPasswordEncoder();
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
