@@ -13,6 +13,7 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -46,98 +47,51 @@ services:
 
   identity-access-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: identity_access_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: identity_access_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5431:5432"]
-
   tenant-admin-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: tenant_admin_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: tenant_admin_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5432:5432"]
-
   billing-subscription-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: billing_subscription_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: billing_subscription_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5433:5432"]
-
   catalog-pricing-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: catalog_pricing_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: catalog_pricing_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5434:5432"]
-
   inventory-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: inventory_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: inventory_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5435:5432"]
-
   sales-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: sales_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: sales_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5436:5432"]
-
   refunds-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: refunds_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: refunds_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5437:5432"]
-
   customers-privacy-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: customers_privacy_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: customers_privacy_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5438:5432"]
-
   ai-deals-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ai_deals_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: ai_deals_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5439:5432"]
-
   notifications-approvals-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: notifications_approvals_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: notifications_approvals_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5440:5432"]
-
   messaging-delivery-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: messaging_delivery_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: messaging_delivery_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5441:5432"]
-
   reporting-finance-db:
     image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: reporting_finance_db
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    environment: { POSTGRES_DB: reporting_finance_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
     ports: ["5442:5432"]
 
   identity-access-service:

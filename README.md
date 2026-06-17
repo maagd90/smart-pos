@@ -1,126 +1,121 @@
-# Smart POS - Multi-Tenant Point of Sale System
+# Store Management System — Microservices SaaS
 
-A production-grade, multi-tenant SaaS Point of Sale system similar to Shopify's architecture — multiple shops can be deployed on the same platform, each with their own isolated data and admin panel.
+This repository now represents the new Store Management System platform. The previous Node.js/Express + React Smart POS codebase is intentionally replaced by a Java 17 + Spring Boot 3 microservices scaffold.
 
-## 🏗️ Architecture
+The project must be built iteratively. This branch delivers **Milestone 1: Platform Scaffold** only, so the architecture can be reviewed before business features are implemented.
 
-```
+## Milestone 1 scope
+
+Included:
+
+- Spring Cloud Gateway as the only public API entry point.
+- Eureka service discovery for local development.
+- Kafka as the async event broker.
+- Redis for cache, session-ready infrastructure, and gateway rate-limiting foundation.
+- PostgreSQL with one database per bounded-context service.
+- Flyway baseline migration per service.
+- Shared contracts library for API envelopes, JWT principal, and domain event records.
+- Runnable Spring Boot skeletons generated for every bounded-context service.
+- React + TypeScript web client skeleton.
+- React Native + Expo mobile client skeleton.
+- Docker Compose orchestration for local development.
+
+Out of scope for this milestone:
+
+- Real payment provider integration.
+- Real WhatsApp delivery.
+- Real LLM calls.
+- Offline mobile sync.
+- Full Identity/RBAC implementation. That starts in Milestone 2.
+
+## Architecture
+
+```text
 smart-pos/
-├── backend/        # Node.js + Express + TypeScript + Prisma
-└── frontend/       # React + TypeScript + Tailwind CSS
+├── api-gateway/                         # Spring Cloud Gateway
+├── discovery-service/                   # Eureka server
+├── shared-contracts/                    # DTOs, events, auth principal, API envelope
+├── services/
+│   ├── identity-access-service/
+│   ├── tenant-admin-service/
+│   ├── billing-subscription-service/
+│   ├── catalog-pricing-service/
+│   ├── inventory-service/
+│   ├── sales-service/
+│   ├── refunds-service/
+│   ├── customers-privacy-service/
+│   ├── ai-deals-service/
+│   ├── notifications-approvals-service/
+│   ├── messaging-delivery-service/
+│   └── reporting-finance-service/
+├── web-client/                          # React + TypeScript
+├── mobile-client/                       # React Native + Expo
+├── docker-compose.yml
+├── service-catalog.yml
+└── scaffold-services.sh
 ```
 
-## 🔑 Key Features
+## Service catalog
 
-- **Multi-tenant isolation** — each shop has completely isolated data
-- **5-tier RBAC** — Platform Admin → Shop Admin → Manager → Cashier → Analyst
-- **AES-256-GCM encryption** — phone numbers and Twilio credentials encrypted at rest
-- **JWT authentication** — access tokens (15min) + refresh tokens (7 days)
-- **Account lockout** — locks after 5 failed attempts for 30 minutes
-- **WhatsApp messaging** — configurable Twilio integration per shop
-- **Real-time inventory** — stock management per shop
+| Service | Port | Database | Responsibility |
+|---|---:|---|---|
+| api-gateway | 8080 | none | Single public entry point, JWT validation, rate-limit foundation, subscription gate foundation |
+| discovery-service | 8761 | none | Local service discovery |
+| identity-access-service | 8101 | identity_access_db | Users, roles, permissions, JWT issuance, permission checks |
+| tenant-admin-service | 8102 | tenant_admin_db | Accounts, stores, store configuration, platform admin |
+| billing-subscription-service | 8103 | billing_subscription_db | Plans, subscriptions, entitlements |
+| catalog-pricing-service | 8104 | catalog_pricing_db | Products, cost, markup/fixed pricing |
+| inventory-service | 8105 | inventory_db | Append-only stock ledger and inventory approvals |
+| sales-service | 8106 | sales_db | POS transactions |
+| refunds-service | 8107 | refunds_db | Returns/refunds and separation of duties |
+| customers-privacy-service | 8108 | customers_privacy_db | Customer profiles, consent, encrypted PII vault |
+| ai-deals-service | 8109 | ai_deals_db | Rules-first deal generation and inactivity scheduler |
+| notifications-approvals-service | 8110 | notifications_approvals_db | Generic approval workflow and manager notifications |
+| messaging-delivery-service | 8111 | messaging_delivery_db | WhatsApp/email stubs and phone decrypt boundary |
+| reporting-finance-service | 8112 | reporting_finance_db | Daily gross profit, expenses, month-end P&L |
 
-## 🧪 Test Suite
+## Local setup
 
-### Running Backend Tests
+Generate the runnable skeleton projects:
 
 ```bash
-cd backend
-npm install
-npm test
+chmod +x scaffold-services.sh
+./scaffold-services.sh
 ```
 
-**190 tests** across 12 test suites — all pass ✅
-
-| Test Suite | Coverage |
-|---|---|
-| `auth.test.ts` | JWT, bcrypt, token lifecycle |
-| `auth.routes.test.ts` | Auth API endpoints |
-| `encryption.test.ts` | AES-256-GCM encrypt/decrypt (22 tests) |
-| `shop-isolation.test.ts` | Multi-tenant isolation (25 tests) |
-| `rbac.test.ts` | Role-based access control (30 tests) |
-| `validation.test.ts` | Input validation + injection prevention (42 tests) |
-| `security.test.ts` | Security headers, auth, injection (30 tests) |
-| `integration.test.ts` | End-to-end flows (35 tests) |
-| `shops.test.ts` | Shop CRUD API |
-| `products.test.ts` | Product management API |
-| `customers.test.ts` | Customer management API |
-| `transactions.test.ts` | Transaction processing API |
-
-### Running Frontend Tests
+Start local infrastructure and services:
 
 ```bash
-cd frontend
-npm install
-npm test -- --watchAll=false
+cp .env.example .env
+docker compose up --build
 ```
 
-**76 tests** across 4 test suites — all pass ✅
-
-| Test Suite | Coverage |
-|---|---|
-| `Login.test.tsx` | Login page (15 tests) |
-| `Navigation.test.tsx` | Role-based sidebar navigation (16 tests) |
-| `POS.test.tsx` | POS terminal (26 tests) |
-| `AdminPanel.test.tsx` | Admin panel (19 tests) |
-
-### Total: 266 tests — all passing ✅
-
-## 🚀 Quick Start
-
-### Backend
+Sample health checks:
 
 ```bash
-cd backend
-cp .env.example .env        # Configure your env vars
-npm install
-npx prisma migrate dev      # Run database migrations
-npm run dev                 # Start development server
+curl http://localhost:8761/actuator/health
+curl http://localhost:8080/actuator/health
+curl http://localhost:8101/api/v1/health
 ```
 
-### Frontend
+## Milestone review checkpoint
 
-```bash
-cd frontend
-npm install
-npm start                   # Start React dev server
-```
+Review and approve these before Milestone 2 starts:
 
-### Required Environment Variables (Backend)
+1. Service boundaries and names.
+2. Kafka as the broker instead of RabbitMQ.
+3. Eureka for local discovery, with Kubernetes DNS later.
+4. One PostgreSQL database per service.
+5. Root-level replacement of the old Smart POS implementation.
+6. Whether generated service skeletons should be committed directly after this review or kept generated from `scaffold-services.sh`.
 
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/smartpos"
-JWT_SECRET="your-32-char-secret-here"
-ENCRYPTION_KEY="your-32-char-encryption-key-here"
-REFRESH_TOKEN_SECRET="your-refresh-token-secret-here"
-```
+## Next milestone
 
-## 🔐 Security
+Milestone 2 will implement Identity & Tenant services:
 
-- JWT tokens in HTTP-only cookies (not localStorage)
-- AES-256-GCM field-level encryption for PII
-- Helmet.js security headers
-- Rate limiting on auth endpoints
-- Input validation and sanitization
-- SQL injection prevention via Prisma ORM
-- XSS prevention via input sanitization
-
-## 📊 Roles & Permissions
-
-| Role | Capabilities |
-|------|---|
-| **Platform Admin** | Manage all shops, create/delete shops, view all data |
-| **Shop Admin** | Manage their own shop, add/remove staff, configure messaging |
-| **Manager** | CRUD products, view customers, view analytics |
-| **Cashier** | Process transactions, create customers, view products |
-| **Analyst** | View analytics, reports, transactions (read-only) |
-
-## 📱 WhatsApp Configuration
-
-Each shop can configure their own Twilio credentials via the Shop Admin panel:
-1. Enter Twilio Account SID and Auth Token (encrypted at rest)
-2. Set WhatsApp-enabled phone number
-3. Test send a message
-4. Enable for the shop
-
-Only the designated authorized user can send messages to prevent spam.
+- Accounts, stores, users, roles, permissions, user_roles, role_permissions, audit_logs.
+- JWT login and refresh flow.
+- Permission-based authorization only; no hardcoded role checks.
+- Store access boundary derived from `user_roles`.
+- Seed roles and permission catalog.
+- Tenant/store scoping enforced server-side.
