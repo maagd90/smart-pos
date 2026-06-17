@@ -1,0 +1,110 @@
+platform:
+  gateway:
+    name: api-gateway
+    port: 8080
+    public: true
+  discovery:
+    name: discovery-service
+    port: 8761
+  broker: kafka
+  cache: redis
+  database: postgresql
+
+shared:
+  name: shared-contracts
+  groupId: com.smartpos
+  artifactId: shared-contracts
+  version: 0.1.0-SNAPSHOT
+
+services:
+  - name: identity-access-service
+    port: 8101
+    database: identity_access_db
+    permissions:
+      - auth.login
+      - user.manage
+      - role.manage
+      - permission.check
+  - name: tenant-admin-service
+    port: 8102
+    database: tenant_admin_db
+    permissions:
+      - account.manage
+      - store.create
+      - store.manage
+  - name: billing-subscription-service
+    port: 8103
+    database: billing_subscription_db
+    permissions:
+      - platform.plan.manage
+      - subscription.read
+      - entitlement.check
+  - name: catalog-pricing-service
+    port: 8104
+    database: catalog_pricing_db
+    permissions:
+      - product.create
+      - product.read
+      - product.edit
+      - pricing.manage
+  - name: inventory-service
+    port: 8105
+    database: inventory_db
+    permissions:
+      - inventory.create
+      - inventory.read
+      - inventory.adjust
+  - name: sales-service
+    port: 8106
+    database: sales_db
+    permissions:
+      - sale.create
+      - sale.read
+  - name: refunds-service
+    port: 8107
+    database: refunds_db
+    permissions:
+      - refund.create
+      - refund.read
+  - name: customers-privacy-service
+    port: 8108
+    database: customers_privacy_db
+    permissions:
+      - customer.create
+      - customer.read_masked
+      - customer.read_full
+      - consent.manage
+  - name: ai-deals-service
+    port: 8109
+    database: ai_deals_db
+    permissions:
+      - deal.propose
+      - deal.approve
+      - ai.configure
+  - name: notifications-approvals-service
+    port: 8110
+    database: notifications_approvals_db
+    permissions:
+      - approval.read
+      - approval.decide
+      - notification.read
+  - name: messaging-delivery-service
+    port: 8111
+    database: messaging_delivery_db
+    permissions:
+      - message.send
+      - message.read
+  - name: reporting-finance-service
+    port: 8112
+    database: reporting_finance_db
+    permissions:
+      - report.read
+      - finance.manage
+
+clients:
+  web:
+    name: web-client
+    port: 3000
+  mobile:
+    name: mobile-client
+    port: 19006
