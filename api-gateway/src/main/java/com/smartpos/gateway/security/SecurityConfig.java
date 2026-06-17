@@ -15,7 +15,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
  * a valid JWT token.</p>
  *
  * <p>CSRF is disabled because the gateway acts as a stateless API proxy.
- * Authentication is handled via ****** in the Authorization header.</p>
+ * Authentication uses JWT passed in the Authorization header.</p>
  */
 @Configuration
 @EnableWebFluxSecurity
