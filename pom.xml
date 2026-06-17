@@ -1,0 +1,30 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.smartpos</groupId>
+  <artifactId>store-management-platform</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <modules>
+    <module>shared-contracts</module>
+    <module>discovery-service</module>
+    <module>api-gateway</module>
+    <module>services/identity-access-service</module>
+    <module>services/tenant-admin-service</module>
+    <module>services/billing-subscription-service</module>
+    <module>services/catalog-pricing-service</module>
+    <module>services/inventory-service</module>
+    <module>services/sales-service</module>
+    <module>services/refunds-service</module>
+    <module>services/customers-privacy-service</module>
+    <module>services/ai-deals-service</module>
+    <module>services/notifications-approvals-service</module>
+    <module>services/messaging-delivery-service</module>
+    <module>services/reporting-finance-service</module>
+  </modules>
+  <properties>
+    <java.version>17</java.version>
+    <spring.boot.version>3.3.5</spring.boot.version>
+    <spring.cloud.version>2023.0.3</spring.cloud.version>
+    <maven.compiler.release>17</maven.compiler.release>
+  </properties>
+</project>

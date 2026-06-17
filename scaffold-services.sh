@@ -225,7 +225,7 @@ EOF
 
 for entry in "${services[@]}"; do
   IFS=':' read -r svc port db appClass <<< "$entry"
-  pkg="$(echo "$svc" | tr '-' '')"
+  pkg="$(echo "$svc" | tr -d '-')"
   base="services/$svc"
 
   write_file "$base/pom.xml" <<EOF

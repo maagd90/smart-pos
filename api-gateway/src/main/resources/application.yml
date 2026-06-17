@@ -1,0 +1,38 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: identity-access-service
+          uri: lb://identity-access-service
+          predicates: [ Path=/api/v1/auth/**,/api/v1/accounts/*/users/** ]
+        - id: tenant-admin-service
+          uri: lb://tenant-admin-service
+          predicates: [ Path=/api/v1/accounts/**,/api/v1/stores/** ]
+        - id: catalog-pricing-service
+          uri: lb://catalog-pricing-service
+          predicates: [ Path=/api/v1/stores/*/products/** ]
+        - id: inventory-service
+          uri: lb://inventory-service
+          predicates: [ Path=/api/v1/stores/*/inventory/** ]
+        - id: sales-service
+          uri: lb://sales-service
+          predicates: [ Path=/api/v1/stores/*/sales/** ]
+        - id: refunds-service
+          uri: lb://refunds-service
+          predicates: [ Path=/api/v1/stores/*/refunds/** ]
+        - id: reporting-finance-service
+          uri: lb://reporting-finance-service
+          predicates: [ Path=/api/v1/stores/*/reports/**,/api/v1/stores/*/expenses/** ]
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway

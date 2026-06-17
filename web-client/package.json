@@ -1,0 +1,7 @@
+{
+  "name": "store-management-web-client",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "dev": "vite --host 0.0.0.0 --port 3000", "build": "tsc && vite build", "preview": "vite preview --host 0.0.0.0 --port 3000" },
+  "dependencies": { "@vitejs/plugin-react": "latest", "vite": "latest", "typescript": "latest", "react": "latest", "react-dom": "latest" }
+}

@@ -1,0 +1,7 @@
+{
+  "name": "store-management-mobile-client",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "start": "expo start", "web": "expo start --web" },
+  "dependencies": { "expo": "latest", "react": "latest", "react-native": "latest", "react-native-web": "latest" }
+}
