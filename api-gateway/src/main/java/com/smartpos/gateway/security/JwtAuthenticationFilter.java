@@ -79,9 +79,12 @@ public class JwtAuthenticationFilter implements WebFilter {
         String storeId = claims.get("store_id", String.class);
         String platformAdmin = String.valueOf(claims.get("platform_admin", Boolean.class));
         String permissions = claims.get("permissions", String.class);
+        String accountWideAccess = String.valueOf(claims.get("account_wide_access", Boolean.class));
+        String accessibleStores = claims.get("accessible_stores", String.class);
 
         List<SimpleGrantedAuthority> authorities = permissions != null
                 ? Arrays.stream(permissions.split(","))
+                    .filter(p -> !p.isBlank())
                     .map(p -> new SimpleGrantedAuthority("PERMISSION_" + p))
                     .collect(Collectors.toList())
                 : List.of();
@@ -100,6 +103,8 @@ public class JwtAuthenticationFilter implements WebFilter {
                 .header("X-Platform-Admin", platformAdmin)
                 .header("X-Permissions", permissions != null ? permissions : "")
                 .header("X-Correlation-Id", correlationId)
+                .header("X-Account-Wide-Access", accountWideAccess != null ? accountWideAccess : "false")
+                .header("X-Accessible-Stores", accessibleStores != null ? accessibleStores : "")
                 .build();
 
         ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();

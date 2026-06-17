@@ -4,6 +4,8 @@ import com.smartpos.contracts.api.ApiEnvelope;
 import com.smartpos.contracts.api.ApiError;
 import com.smartpos.contracts.context.RequestContextHolder;
 import com.smartpos.contracts.context.TenantContext;
+import com.smartpos.contracts.security.RequirePermission;
+import com.smartpos.contracts.security.RequireStoreAccess;
 import com.smartpos.reporting.api.dto.DailyReportResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -31,6 +33,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/v1/stores/{storeId}/reports")
+@RequireStoreAccess
 public class ReportController {
 
     private final String salesServiceUrl;
@@ -55,6 +58,7 @@ public class ReportController {
      * using the half-open range [date 00:00, date+1 00:00).</p>
      */
     @GetMapping("/daily")
+    @RequirePermission("reports.view")
     public ResponseEntity<ApiEnvelope<DailyReportResponse>> getDailyReport(
             @PathVariable UUID storeId,
             @RequestParam(required = false) String date) {

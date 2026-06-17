@@ -7,6 +7,9 @@ import com.smartpos.catalog.domain.ProductRepository;
 import com.smartpos.contracts.api.ApiEnvelope;
 import com.smartpos.contracts.api.ApiError;
 import com.smartpos.contracts.context.RequestContextHolder;
+import com.smartpos.contracts.context.TenantContext;
+import com.smartpos.contracts.security.RequirePermission;
+import com.smartpos.contracts.security.RequireStoreAccess;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
@@ -21,40 +24,23 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller for managing products in a store catalog.
- *
- * <p>All endpoints are scoped to a specific store via the path variable.
- * Supports both markup-based and fixed pricing modes.</p>
  */
 @RestController
 @RequestMapping("/api/v1/stores/{storeId}/products")
+@RequireStoreAccess
 public class ProductController {
 
-    private static final UUID DEFAULT_ACCOUNT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private final ProductRepository productRepository;
 
-    /**
-     * Creates the product controller.
-     *
-     * @param productRepository repository for product persistence
-     */
     public ProductController(ProductRepository productRepository) {
         this.productRepository = productRepository;
     }
 
     /**
      * Creates a new product in the store catalog.
-     *
-     * <p>Pricing is calculated based on the pricingMode:</p>
-     * <ul>
-     *   <li>markup: sellingPrice = costPrice * (1 + markupPercent/100)</li>
-     *   <li>fixed: sellingPrice is provided directly</li>
-     * </ul>
-     *
-     * @param storeId the store to add the product to
-     * @param request the product creation request
-     * @return the created product
      */
     @PostMapping
+    @RequirePermission("catalog.create")
     public ResponseEntity<ApiEnvelope<ProductResponse>> createProduct(
             @PathVariable UUID storeId, @RequestBody CreateProductRequest request) {
 
@@ -63,10 +49,18 @@ public class ProductController {
                     .body(ApiEnvelope.fail(ApiError.of("INVALID_REQUEST", "name and costPrice are required")));
         }
 
-        UUID accountId = RequestContextHolder.get().accountId() != null
-                ? RequestContextHolder.get().accountId()
-                : DEFAULT_ACCOUNT_ID;
-        String currency = request.currency() != null ? request.currency() : "AED";
+        TenantContext context = RequestContextHolder.get();
+        if (context.accountId() == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
+        UUID accountId = context.accountId();
+
+        String currency = request.currency();
+        if (currency == null || currency.isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(ApiEnvelope.fail(ApiError.of("INVALID_REQUEST", "currency is required")));
+        }
         String pricingMode = request.pricingMode() != null ? request.pricingMode() : "markup";
 
         Product product;
@@ -92,11 +86,9 @@ public class ProductController {
 
     /**
      * Lists all products in the specified store.
-     *
-     * @param storeId the store to list products for
-     * @return list of products
      */
     @GetMapping
+    @RequirePermission("catalog.view")
     public ResponseEntity<ApiEnvelope<List<ProductResponse>>> listProducts(@PathVariable UUID storeId) {
         List<ProductResponse> products = productRepository.findByStoreId(storeId)
                 .stream()
@@ -107,12 +99,9 @@ public class ProductController {
 
     /**
      * Gets a specific product by ID.
-     *
-     * @param storeId the store the product belongs to
-     * @param productId the product ID
-     * @return the product if found
      */
     @GetMapping("/{productId}")
+    @RequirePermission("catalog.view")
     public ResponseEntity<ApiEnvelope<ProductResponse>> getProduct(
             @PathVariable UUID storeId, @PathVariable UUID productId) {
         return productRepository.findByIdAndStoreId(productId, storeId)

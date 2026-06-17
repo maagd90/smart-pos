@@ -4,6 +4,8 @@ import com.smartpos.contracts.api.ApiEnvelope;
 import com.smartpos.contracts.api.ApiError;
 import com.smartpos.contracts.context.RequestContextHolder;
 import com.smartpos.contracts.context.TenantContext;
+import com.smartpos.contracts.security.RequirePermission;
+import com.smartpos.contracts.security.RequireStoreAccess;
 import com.smartpos.inventory.api.dto.CreateMovementRequest;
 import com.smartpos.inventory.api.dto.MovementResponse;
 import com.smartpos.inventory.api.dto.ReceiveStockRequest;
@@ -29,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/stores/{storeId}/inventory")
+@RequireStoreAccess
 public class InventoryController {
 
     private final InventoryMovementRepository movementRepository;
@@ -44,6 +47,7 @@ public class InventoryController {
      * Receives stock into inventory (creates a positive movement).
      */
     @PostMapping("/receive")
+    @RequirePermission("inventory.receive")
     public ResponseEntity<ApiEnvelope<MovementResponse>> receiveStock(
             @PathVariable UUID storeId, @RequestBody ReceiveStockRequest request) {
         if (request.quantity() <= 0) {

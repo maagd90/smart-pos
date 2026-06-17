@@ -4,12 +4,13 @@ import com.smartpos.contracts.api.ApiEnvelope;
 import com.smartpos.contracts.api.ApiError;
 import com.smartpos.contracts.context.RequestContextHolder;
 import com.smartpos.contracts.context.TenantContext;
+import com.smartpos.contracts.security.RequirePermission;
+import com.smartpos.contracts.security.RequireStoreAccess;
 import com.smartpos.sales.api.dto.CreateSaleRequest;
 import com.smartpos.sales.api.dto.SaleResponse;
 import com.smartpos.sales.domain.Sale;
 import com.smartpos.sales.domain.SaleRepository;
 import com.smartpos.sales.integration.CatalogClient;
-import com.smartpos.sales.integration.InventoryClient;
 import com.smartpos.sales.outbox.OutboxEvent;
 import com.smartpos.sales.outbox.OutboxRepository;
 import java.math.BigDecimal;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/stores/{storeId}/sales")
+@RequireStoreAccess
 public class SalesController {
 
     private final SaleRepository saleRepository;
@@ -55,6 +57,7 @@ public class SalesController {
      */
     @PostMapping
     @Transactional
+    @RequirePermission("sale.create")
     public ResponseEntity<ApiEnvelope<SaleResponse>> createSale(
             @PathVariable UUID storeId, @RequestBody CreateSaleRequest request) {
         if (request == null || request.items() == null || request.items().isEmpty()) {

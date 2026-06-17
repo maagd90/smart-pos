@@ -54,6 +54,11 @@ public class RequestContextFilter implements Filter {
      * @throws IOException if an I/O error occurs
      * @throws ServletException if a servlet error occurs
      */
+    /** Header name for account-wide access flag. */
+    public static final String HEADER_ACCOUNT_WIDE_ACCESS = "X-Account-Wide-Access";
+    /** Header name for comma-separated accessible store IDs. */
+    public static final String HEADER_ACCESSIBLE_STORES = "X-Accessible-Stores";
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
@@ -75,8 +80,11 @@ public class RequestContextFilter implements Filter {
         boolean platformAdmin = "true".equalsIgnoreCase(request.getHeader(HEADER_PLATFORM_ADMIN));
         Set<String> permissions = parsePermissions(request.getHeader(HEADER_PERMISSIONS));
         String correlationId = request.getHeader(HEADER_CORRELATION_ID);
+        boolean accountWideAccess = "true".equalsIgnoreCase(request.getHeader(HEADER_ACCOUNT_WIDE_ACCESS));
+        Set<UUID> accessibleStores = parseUuidSet(request.getHeader(HEADER_ACCESSIBLE_STORES));
 
-        return new TenantContext(userId, accountId, storeId, platformAdmin, permissions, correlationId);
+        return new TenantContext(userId, accountId, storeId, platformAdmin, permissions,
+                correlationId, accountWideAccess, accessibleStores);
     }
 
     private UUID parseUuid(String value) {
@@ -95,6 +103,22 @@ public class RequestContextFilter implements Filter {
             String trimmed = token.trim();
             if (!trimmed.isEmpty()) {
                 result.add(trimmed);
+            }
+        }
+        return Collections.unmodifiableSet(result);
+    }
+
+    private Set<UUID> parseUuidSet(String value) {
+        if (value == null || value.isBlank()) return Collections.emptySet();
+        Set<UUID> result = new java.util.HashSet<>();
+        for (String token : value.split(",")) {
+            String trimmed = token.trim();
+            if (!trimmed.isEmpty()) {
+                try {
+                    result.add(UUID.fromString(trimmed));
+                } catch (IllegalArgumentException e) {
+                    // skip invalid UUIDs
+                }
             }
         }
         return Collections.unmodifiableSet(result);

@@ -4,6 +4,8 @@ import com.smartpos.contracts.api.ApiEnvelope;
 import com.smartpos.contracts.api.ApiError;
 import com.smartpos.contracts.context.RequestContextHolder;
 import com.smartpos.contracts.context.TenantContext;
+import com.smartpos.contracts.security.RequirePermission;
+import com.smartpos.contracts.security.RequireStoreAccess;
 import com.smartpos.refunds.api.dto.CreateRefundRequest;
 import com.smartpos.refunds.api.dto.RefundResponse;
 import com.smartpos.refunds.domain.Refund;
@@ -34,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/stores/{storeId}/refunds")
+@RequireStoreAccess
 public class RefundsController {
 
     private final RefundRepository refundRepository;
@@ -49,6 +52,7 @@ public class RefundsController {
      */
     @PostMapping
     @Transactional
+    @RequirePermission("refund.create")
     public ResponseEntity<ApiEnvelope<RefundResponse>> createRefund(
             @PathVariable UUID storeId, @RequestBody CreateRefundRequest request) {
         if (request == null || request.saleId() == null || request.items() == null || request.items().isEmpty()) {
