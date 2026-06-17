@@ -19,6 +19,12 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     Optional<Sale> findByIdAndStoreId(UUID id, UUID storeId);
 
     /**
+     * Finds all sales for a store (tenant-scoped).
+     */
+    @EntityGraph(attributePaths = "items")
+    List<Sale> findByStoreIdAndAccountId(UUID storeId, UUID accountId);
+
+    /**
      * Finds all sales for a store.
      */
     @EntityGraph(attributePaths = "items")

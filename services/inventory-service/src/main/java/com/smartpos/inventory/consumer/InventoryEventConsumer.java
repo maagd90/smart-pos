@@ -53,7 +53,7 @@ public class InventoryEventConsumer {
                 }
 
                 InventoryMovement movement = new InventoryMovement(
-                        storeId, accountId, productId, "sale", -quantity, "sale", saleId.toString());
+                        storeId, accountId, productId, "sale", -quantity, "sale", saleId);
                 movementRepository.save(movement);
             }
         } catch (Exception e) {
@@ -76,7 +76,7 @@ public class InventoryEventConsumer {
                 int quantity = item.get("quantity").asInt();
 
                 InventoryMovement movement = new InventoryMovement(
-                        storeId, accountId, productId, "return", quantity, "refund", refundId.toString());
+                        storeId, accountId, productId, "return", quantity, "refund", refundId);
                 movementRepository.save(movement);
             }
         } catch (Exception e) {
