@@ -1,0 +1,28 @@
+# Debug override - exposes domain service ports on the host for direct access.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build
+
+services:
+  identity-access-service:
+    ports: ["8101:8101"]
+  tenant-admin-service:
+    ports: ["8102:8102"]
+  billing-subscription-service:
+    ports: ["8103:8103"]
+  catalog-pricing-service:
+    ports: ["8104:8104"]
+  inventory-service:
+    ports: ["8105:8105"]
+  sales-service:
+    ports: ["8106:8106"]
+  refunds-service:
+    ports: ["8107:8107"]
+  customers-privacy-service:
+    ports: ["8108:8108"]
+  ai-deals-service:
+    ports: ["8109:8109"]
+  notifications-approvals-service:
+    ports: ["8110:8110"]
+  messaging-delivery-service:
+    ports: ["8111:8111"]
+  reporting-finance-service:
+    ports: ["8112:8112"]

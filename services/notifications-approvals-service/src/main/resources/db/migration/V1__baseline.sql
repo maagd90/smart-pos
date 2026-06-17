@@ -1,3 +1,6 @@
+-- Baseline migration for notifications-approvals-service
+-- Milestone 1: foundational tables only
+
 CREATE TABLE IF NOT EXISTS service_metadata (
     id UUID PRIMARY KEY,
     service_name VARCHAR(120) NOT NULL,

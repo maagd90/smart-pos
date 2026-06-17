@@ -1,5 +1,6 @@
 server:
   port: ${SERVER_PORT:8104}
+
 spring:
   application:
     name: catalog-pricing-service
@@ -15,10 +16,15 @@ spring:
     enabled: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: earliest
+      group-id: catalog-pricing-service
+
 eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+
 management:
   endpoints:
     web:

@@ -1,36 +1,219 @@
 server:
   port: 8080
+
 spring:
   application:
     name: api-gateway
   cloud:
     gateway:
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: ${RATE_LIMIT_REPLENISH:50}
+            redis-rate-limiter.burstCapacity: ${RATE_LIMIT_BURST:100}
+            key-resolver: "#{@userOrIpKeyResolver}"
       routes:
-        - id: identity-access-service
+        # --- Identity & Access ---
+        - id: identity-auth
           uri: lb://identity-access-service
-          predicates: [ Path=/api/v1/auth/**,/api/v1/accounts/*/users/** ]
-        - id: tenant-admin-service
+          predicates:
+            - Path=/api/v1/auth/**
+          filters:
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: ${AUTH_RATE_LIMIT_REPLENISH:10}
+                redis-rate-limiter.burstCapacity: ${AUTH_RATE_LIMIT_BURST:20}
+                key-resolver: "#{@userOrIpKeyResolver}"
+        - id: identity-users
+          uri: lb://identity-access-service
+          predicates:
+            - Path=/api/v1/accounts/*/users/**
+
+        # --- Tenant & Admin ---
+        - id: tenant-accounts
           uri: lb://tenant-admin-service
-          predicates: [ Path=/api/v1/accounts/**,/api/v1/stores/** ]
-        - id: catalog-pricing-service
+          predicates:
+            - Path=/api/v1/accounts/**
+          metadata:
+            # Lower priority than identity-users (more specific routes match first)
+            order: 100
+        - id: tenant-stores
+          uri: lb://tenant-admin-service
+          predicates:
+            - Path=/api/v1/stores/{storeId}
+            - Method=GET,PUT,DELETE
+
+        # --- Billing & Subscription ---
+        - id: billing
+          uri: lb://billing-subscription-service
+          predicates:
+            - Path=/api/v1/billing/**
+        - id: subscriptions
+          uri: lb://billing-subscription-service
+          predicates:
+            - Path=/api/v1/subscriptions/**
+
+        # --- Catalog & Pricing ---
+        - id: catalog-pricing
           uri: lb://catalog-pricing-service
-          predicates: [ Path=/api/v1/stores/*/products/** ]
-        - id: inventory-service
+          predicates:
+            - Path=/api/v1/stores/*/products/**
+
+        # --- Inventory ---
+        - id: inventory
           uri: lb://inventory-service
-          predicates: [ Path=/api/v1/stores/*/inventory/** ]
-        - id: sales-service
+          predicates:
+            - Path=/api/v1/stores/*/inventory/**
+
+        # --- Sales ---
+        - id: sales
           uri: lb://sales-service
-          predicates: [ Path=/api/v1/stores/*/sales/** ]
-        - id: refunds-service
+          predicates:
+            - Path=/api/v1/stores/*/sales/**
+
+        # --- Refunds ---
+        - id: refunds
           uri: lb://refunds-service
-          predicates: [ Path=/api/v1/stores/*/refunds/** ]
-        - id: reporting-finance-service
+          predicates:
+            - Path=/api/v1/stores/*/refunds/**
+
+        # --- Customers & Privacy ---
+        - id: customers-privacy
+          uri: lb://customers-privacy-service
+          predicates:
+            - Path=/api/v1/stores/*/customers/**
+
+        # --- AI Deals ---
+        - id: ai-deals-store
+          uri: lb://ai-deals-service
+          predicates:
+            - Path=/api/v1/stores/*/deals/**
+        - id: ai-deals-global
+          uri: lb://ai-deals-service
+          predicates:
+            - Path=/api/v1/deals/**
+
+        # --- Notifications & Approvals ---
+        - id: approvals
+          uri: lb://notifications-approvals-service
+          predicates:
+            - Path=/api/v1/stores/*/approvals/**
+        - id: notifications
+          uri: lb://notifications-approvals-service
+          predicates:
+            - Path=/api/v1/stores/*/notifications/**
+
+        # --- Messaging & Delivery ---
+        - id: messaging
+          uri: lb://messaging-delivery-service
+          predicates:
+            - Path=/api/v1/stores/*/messages/**
+
+        # --- Reporting & Finance ---
+        - id: reports
           uri: lb://reporting-finance-service
-          predicates: [ Path=/api/v1/stores/*/reports/**,/api/v1/stores/*/expenses/** ]
+          predicates:
+            - Path=/api/v1/stores/*/reports/**
+        - id: expenses
+          uri: lb://reporting-finance-service
+          predicates:
+            - Path=/api/v1/stores/*/expenses/**
+
+        # --- Platform Admin ---
+        - id: platform-admin
+          uri: lb://tenant-admin-service
+          predicates:
+            - Path=/api/v1/platform/**
+
+        # --- Health routes for each service (accessible without auth) ---
+        - id: health-identity
+          uri: lb://identity-access-service
+          predicates:
+            - Path=/api/v1/platform/health/identity-access
+          filters:
+            - RewritePath=/api/v1/platform/health/identity-access, /api/v1/health
+        - id: health-tenant
+          uri: lb://tenant-admin-service
+          predicates:
+            - Path=/api/v1/platform/health/tenant-admin
+          filters:
+            - RewritePath=/api/v1/platform/health/tenant-admin, /api/v1/health
+        - id: health-billing
+          uri: lb://billing-subscription-service
+          predicates:
+            - Path=/api/v1/platform/health/billing-subscription
+          filters:
+            - RewritePath=/api/v1/platform/health/billing-subscription, /api/v1/health
+        - id: health-catalog
+          uri: lb://catalog-pricing-service
+          predicates:
+            - Path=/api/v1/platform/health/catalog-pricing
+          filters:
+            - RewritePath=/api/v1/platform/health/catalog-pricing, /api/v1/health
+        - id: health-inventory
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/v1/platform/health/inventory
+          filters:
+            - RewritePath=/api/v1/platform/health/inventory, /api/v1/health
+        - id: health-sales
+          uri: lb://sales-service
+          predicates:
+            - Path=/api/v1/platform/health/sales
+          filters:
+            - RewritePath=/api/v1/platform/health/sales, /api/v1/health
+        - id: health-refunds
+          uri: lb://refunds-service
+          predicates:
+            - Path=/api/v1/platform/health/refunds
+          filters:
+            - RewritePath=/api/v1/platform/health/refunds, /api/v1/health
+        - id: health-customers
+          uri: lb://customers-privacy-service
+          predicates:
+            - Path=/api/v1/platform/health/customers-privacy
+          filters:
+            - RewritePath=/api/v1/platform/health/customers-privacy, /api/v1/health
+        - id: health-deals
+          uri: lb://ai-deals-service
+          predicates:
+            - Path=/api/v1/platform/health/ai-deals
+          filters:
+            - RewritePath=/api/v1/platform/health/ai-deals, /api/v1/health
+        - id: health-approvals
+          uri: lb://notifications-approvals-service
+          predicates:
+            - Path=/api/v1/platform/health/notifications-approvals
+          filters:
+            - RewritePath=/api/v1/platform/health/notifications-approvals, /api/v1/health
+        - id: health-messaging
+          uri: lb://messaging-delivery-service
+          predicates:
+            - Path=/api/v1/platform/health/messaging-delivery
+          filters:
+            - RewritePath=/api/v1/platform/health/messaging-delivery, /api/v1/health
+        - id: health-reporting
+          uri: lb://reporting-finance-service
+          predicates:
+            - Path=/api/v1/platform/health/reporting-finance
+          filters:
+            - RewritePath=/api/v1/platform/health/reporting-finance, /api/v1/health
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
 eureka:
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+
+gateway:
+  jwt:
+    secret: ${JWT_SECRET:change-me-at-least-32-characters-long}
+    issuer: ${JWT_ISSUER:smart-pos-platform}
+
 management:
   endpoints:
     web:

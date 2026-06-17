@@ -1,19 +1,29 @@
+# Store Management Platform - Local Development Orchestration
+#
+# Architecture: All client traffic enters through the api-gateway only.
+# Domain services are NOT exposed on host ports by default.
+# Use docker-compose.debug.yml for direct service access during development.
+
 services:
+
+  # --- Infrastructure ---
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.1
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
-    ports:
-      - "2181:2181"
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: confluentinc/cp-kafka:7.6.1
     depends_on:
-      - zookeeper
-    ports:
-      - "9092:9092"
-      - "29092:29092"
+      zookeeper:
+        condition: service_healthy
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -21,82 +31,226 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "29092:29092"
 
   redis:
     image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
     ports:
       - "6379:6379"
 
+  # --- Databases (one per service) ---
+
+  identity-access-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: identity_access_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d identity_access_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  tenant-admin-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tenant_admin_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d tenant_admin_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  billing-subscription-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: billing_subscription_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d billing_subscription_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  catalog-pricing-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: catalog_pricing_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d catalog_pricing_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  inventory-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d inventory_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  sales-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: sales_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d sales_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  refunds-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: refunds_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d refunds_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  customers-privacy-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: customers_privacy_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d customers_privacy_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ai-deals-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ai_deals_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ai_deals_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  notifications-approvals-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notifications_approvals_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d notifications_approvals_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  messaging-delivery-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: messaging_delivery_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d messaging_delivery_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  reporting-finance-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: reporting_finance_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d reporting_finance_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # --- Platform Services ---
+
   discovery-service:
-    build: ./discovery-service
+    build:
+      context: .
+      dockerfile: discovery-service/Dockerfile
     ports:
       - "8761:8761"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   api-gateway:
-    build: ./api-gateway
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
     depends_on:
-      - discovery-service
-      - redis
+      discovery-service:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       REDIS_HOST: redis
+      REDIS_PORT: 6379
       JWT_ISSUER: ${JWT_ISSUER}
       JWT_SECRET: ${JWT_SECRET}
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
-  identity-access-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: identity_access_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5431:5432"]
-  tenant-admin-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: tenant_admin_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5432:5432"]
-  billing-subscription-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: billing_subscription_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5433:5432"]
-  catalog-pricing-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: catalog_pricing_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5434:5432"]
-  inventory-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: inventory_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5435:5432"]
-  sales-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: sales_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5436:5432"]
-  refunds-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: refunds_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5437:5432"]
-  customers-privacy-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: customers_privacy_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5438:5432"]
-  ai-deals-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: ai_deals_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5439:5432"]
-  notifications-approvals-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: notifications_approvals_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5440:5432"]
-  messaging-delivery-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: messaging_delivery_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5441:5432"]
-  reporting-finance-db:
-    image: postgres:16-alpine
-    environment: { POSTGRES_DB: reporting_finance_db, POSTGRES_USER: ${POSTGRES_USER}, POSTGRES_PASSWORD: ${POSTGRES_PASSWORD} }
-    ports: ["5442:5432"]
+  # --- Domain Services (not exposed on host, accessed only through gateway) ---
 
   identity-access-service:
-    build: ./services/identity-access-service
-    depends_on: [identity-access-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/identity-access-service
+    depends_on:
+      identity-access-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8101
       SPRING_DATASOURCE_URL: jdbc:postgresql://identity-access-db:5432/identity_access_db
@@ -104,11 +258,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8101:8101"]
+    expose:
+      - "8101"
 
   tenant-admin-service:
-    build: ./services/tenant-admin-service
-    depends_on: [tenant-admin-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/tenant-admin-service
+    depends_on:
+      tenant-admin-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8102
       SPRING_DATASOURCE_URL: jdbc:postgresql://tenant-admin-db:5432/tenant_admin_db
@@ -116,11 +281,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8102:8102"]
+    expose:
+      - "8102"
 
   billing-subscription-service:
-    build: ./services/billing-subscription-service
-    depends_on: [billing-subscription-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/billing-subscription-service
+    depends_on:
+      billing-subscription-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8103
       SPRING_DATASOURCE_URL: jdbc:postgresql://billing-subscription-db:5432/billing_subscription_db
@@ -128,11 +304,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8103:8103"]
+    expose:
+      - "8103"
 
   catalog-pricing-service:
-    build: ./services/catalog-pricing-service
-    depends_on: [catalog-pricing-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/catalog-pricing-service
+    depends_on:
+      catalog-pricing-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8104
       SPRING_DATASOURCE_URL: jdbc:postgresql://catalog-pricing-db:5432/catalog_pricing_db
@@ -140,11 +327,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8104:8104"]
+    expose:
+      - "8104"
 
   inventory-service:
-    build: ./services/inventory-service
-    depends_on: [inventory-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/inventory-service
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8105
       SPRING_DATASOURCE_URL: jdbc:postgresql://inventory-db:5432/inventory_db
@@ -152,11 +350,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8105:8105"]
+    expose:
+      - "8105"
 
   sales-service:
-    build: ./services/sales-service
-    depends_on: [sales-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/sales-service
+    depends_on:
+      sales-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8106
       SPRING_DATASOURCE_URL: jdbc:postgresql://sales-db:5432/sales_db
@@ -164,11 +373,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8106:8106"]
+    expose:
+      - "8106"
 
   refunds-service:
-    build: ./services/refunds-service
-    depends_on: [refunds-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/refunds-service
+    depends_on:
+      refunds-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8107
       SPRING_DATASOURCE_URL: jdbc:postgresql://refunds-db:5432/refunds_db
@@ -176,11 +396,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8107:8107"]
+    expose:
+      - "8107"
 
   customers-privacy-service:
-    build: ./services/customers-privacy-service
-    depends_on: [customers-privacy-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/customers-privacy-service
+    depends_on:
+      customers-privacy-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8108
       SPRING_DATASOURCE_URL: jdbc:postgresql://customers-privacy-db:5432/customers_privacy_db
@@ -188,11 +419,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8108:8108"]
+    expose:
+      - "8108"
 
   ai-deals-service:
-    build: ./services/ai-deals-service
-    depends_on: [ai-deals-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/ai-deals-service
+    depends_on:
+      ai-deals-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8109
       SPRING_DATASOURCE_URL: jdbc:postgresql://ai-deals-db:5432/ai_deals_db
@@ -200,11 +442,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8109:8109"]
+    expose:
+      - "8109"
 
   notifications-approvals-service:
-    build: ./services/notifications-approvals-service
-    depends_on: [notifications-approvals-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/notifications-approvals-service
+    depends_on:
+      notifications-approvals-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8110
       SPRING_DATASOURCE_URL: jdbc:postgresql://notifications-approvals-db:5432/notifications_approvals_db
@@ -212,11 +465,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8110:8110"]
+    expose:
+      - "8110"
 
   messaging-delivery-service:
-    build: ./services/messaging-delivery-service
-    depends_on: [messaging-delivery-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/messaging-delivery-service
+    depends_on:
+      messaging-delivery-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8111
       SPRING_DATASOURCE_URL: jdbc:postgresql://messaging-delivery-db:5432/messaging_delivery_db
@@ -224,11 +488,22 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8111:8111"]
+    expose:
+      - "8111"
 
   reporting-finance-service:
-    build: ./services/reporting-finance-service
-    depends_on: [reporting-finance-db, discovery-service, kafka]
+    build:
+      context: .
+      dockerfile: Dockerfile.service
+      args:
+        SERVICE_MODULE: services/reporting-finance-service
+    depends_on:
+      reporting-finance-db:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8112
       SPRING_DATASOURCE_URL: jdbc:postgresql://reporting-finance-db:5432/reporting_finance_db
@@ -236,4 +511,5 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-    ports: ["8112:8112"]
+    expose:
+      - "8112"
