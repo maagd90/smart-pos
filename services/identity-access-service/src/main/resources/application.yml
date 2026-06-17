@@ -20,6 +20,12 @@ spring:
       auto-offset-reset: earliest
       group-id: identity-access-service
 
+identity:
+  jwt:
+    secret: ${JWT_SECRET:change-me-at-least-32-characters-long}
+    issuer: ${JWT_ISSUER:smart-pos-platform}
+    expiration-seconds: 3600
+
 eureka:
   client:
     service-url:

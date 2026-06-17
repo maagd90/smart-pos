@@ -30,3 +30,9 @@ management:
     web:
       exposure:
         include: health,info
+
+integration:
+  sales-service:
+    url: ${SALES_SERVICE_URL:http://sales-service:8106}
+  refunds-service:
+    url: ${REFUNDS_SERVICE_URL:http://refunds-service:8107}

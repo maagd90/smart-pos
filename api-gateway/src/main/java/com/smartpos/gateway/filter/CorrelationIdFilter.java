@@ -21,6 +21,13 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
 
     private static final String CORRELATION_HEADER = "X-Correlation-Id";
 
+    /**
+     * Filters each request to ensure a correlation ID is present.
+     *
+     * @param exchange the current server exchange
+     * @param chain the gateway filter chain
+     * @return a {@code Mono<Void>} to indicate when request handling is complete
+     */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String correlationId = exchange.getRequest().getHeaders().getFirst(CORRELATION_HEADER);
@@ -37,6 +44,12 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
         return chain.filter(exchange);
     }
 
+    /**
+     * Returns the filter order. Runs early (order -10) to ensure correlation ID
+     * is available to all subsequent filters and services.
+     *
+     * @return the filter order
+     */
     @Override
     public int getOrder() {
         return -10;

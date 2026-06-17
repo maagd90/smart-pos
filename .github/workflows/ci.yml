@@ -2,9 +2,9 @@ name: Platform CI
 
 on:
   push:
-    branches: [main, "milestone-*"]
+    branches: ["main", "feature/**", "milestone-*"]
   pull_request:
-    branches: [main]
+    branches: ["main", "feature/**"]
 
 permissions:
   contents: read
@@ -80,6 +80,8 @@ jobs:
         run: docker compose up --build -d
       - name: Run smoke tests
         run: ./scripts/smoke-test.sh
+      - name: Run e2e business smoke tests
+        run: ./scripts/e2e-smoke-test.sh
       - name: Print logs on failure
         if: failure()
         run: docker compose logs --tail=100

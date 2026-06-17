@@ -30,3 +30,7 @@ management:
     web:
       exposure:
         include: health,info
+
+integration:
+  inventory-service:
+    url: ${INVENTORY_SERVICE_URL:http://inventory-service:8105}

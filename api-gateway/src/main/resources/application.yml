@@ -119,13 +119,8 @@ spring:
           predicates:
             - Path=/api/v1/stores/*/expenses/**
 
-        # --- Platform Admin ---
-        - id: platform-admin
-          uri: lb://tenant-admin-service
-          predicates:
-            - Path=/api/v1/platform/**
-
         # --- Health routes for each service (accessible without auth) ---
+        # NOTE: These must be defined BEFORE the platform-admin catch-all route.
         - id: health-identity
           uri: lb://identity-access-service
           predicates:
@@ -198,6 +193,12 @@ spring:
             - Path=/api/v1/platform/health/reporting-finance
           filters:
             - RewritePath=/api/v1/platform/health/reporting-finance, /api/v1/health
+
+        # --- Platform Admin (catch-all, must come AFTER specific health routes) ---
+        - id: platform-admin
+          uri: lb://tenant-admin-service
+          predicates:
+            - Path=/api/v1/platform/**
 
   data:
     redis:

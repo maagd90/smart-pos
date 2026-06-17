@@ -35,6 +35,14 @@ public class SubscriptionGateFilter implements GlobalFilter, Ordered {
         this.gateClient = gateClient;
     }
 
+    /**
+     * Evaluates the subscription gate for each request and allows or denies access
+     * based on the tenant's subscription status.
+     *
+     * @param exchange the current server exchange
+     * @param chain the gateway filter chain
+     * @return a {@code Mono<Void>} to indicate when request handling is complete
+     */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
@@ -84,6 +92,12 @@ public class SubscriptionGateFilter implements GlobalFilter, Ordered {
         };
     }
 
+    /**
+     * Returns the filter order. Runs after authentication (order 10) so that
+     * subscription evaluation has access to the tenant context headers.
+     *
+     * @return the filter order
+     */
     @Override
     public int getOrder() {
         return 10;

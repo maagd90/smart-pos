@@ -44,6 +44,16 @@ public class RequestContextFilter implements Filter {
     /** Header name for the request correlation identifier. */
     public static final String HEADER_CORRELATION_ID = "X-Correlation-Id";
 
+    /**
+     * Extracts tenant context from gateway-forwarded headers and populates
+     * the thread-local holder for the duration of the request.
+     *
+     * @param request the servlet request
+     * @param response the servlet response
+     * @param chain the filter chain
+     * @throws IOException if an I/O error occurs
+     * @throws ServletException if a servlet error occurs
+     */
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {

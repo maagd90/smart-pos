@@ -50,6 +50,14 @@ public class JwtAuthenticationFilter implements WebFilter {
         this.jwtValidator = jwtValidator;
     }
 
+    /**
+     * Filters each request to extract and validate JWT tokens, setting up
+     * the security context and forwarding identity headers to downstream services.
+     *
+     * @param exchange the current server exchange
+     * @param chain the web filter chain
+     * @return a {@code Mono<Void>} to indicate when request handling is complete
+     */
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
