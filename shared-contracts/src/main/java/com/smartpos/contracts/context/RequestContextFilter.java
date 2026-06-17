@@ -90,6 +90,13 @@ public class RequestContextFilter implements Filter {
 
     private Set<String> parsePermissions(String value) {
         if (value == null || value.isBlank()) return Collections.emptySet();
-        return Set.of(value.split(","));
+        Set<String> result = new java.util.HashSet<>();
+        for (String token : value.split(",")) {
+            String trimmed = token.trim();
+            if (!trimmed.isEmpty()) {
+                result.add(trimmed);
+            }
+        }
+        return Collections.unmodifiableSet(result);
     }
 }

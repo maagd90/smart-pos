@@ -70,10 +70,12 @@ public class Sale {
      * @param productName the product name at time of sale
      * @param quantity the quantity sold
      * @param unitPrice the unit price at time of sale
+     * @param costPrice the cost price snapshotted at sale time
      */
-    public void addItem(UUID productId, String productName, int quantity, BigDecimal unitPrice) {
+    public void addItem(UUID productId, String productName, int quantity, BigDecimal unitPrice, BigDecimal costPrice) {
         BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
-        SaleItem item = new SaleItem(this, productId, productName, quantity, unitPrice, lineTotal);
+        BigDecimal lineCost = costPrice.multiply(BigDecimal.valueOf(quantity));
+        SaleItem item = new SaleItem(this, productId, productName, quantity, unitPrice, lineTotal, costPrice, lineCost);
         this.items.add(item);
         this.total = this.total.add(lineTotal);
     }

@@ -12,6 +12,7 @@ import com.smartpos.inventory.domain.InventoryMovement;
 import com.smartpos.inventory.domain.InventoryMovementRepository;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,25 +31,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/stores/{storeId}/inventory")
 public class InventoryController {
 
-    private static final UUID FALLBACK_ACCOUNT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
-
     private final InventoryMovementRepository movementRepository;
+    private final boolean allowNegativeStock;
 
-    /**
-     * Creates the inventory controller.
-     *
-     * @param movementRepository repository for movement persistence
-     */
-    public InventoryController(InventoryMovementRepository movementRepository) {
+    public InventoryController(InventoryMovementRepository movementRepository,
+                               @Value("${inventory.allow-negative-stock:false}") boolean allowNegativeStock) {
         this.movementRepository = movementRepository;
+        this.allowNegativeStock = allowNegativeStock;
     }
 
     /**
      * Receives stock into inventory (creates a positive movement).
-     *
-     * @param storeId the store receiving stock
-     * @param request the receive request with product and quantity
-     * @return the created movement
      */
     @PostMapping("/receive")
     public ResponseEntity<ApiEnvelope<MovementResponse>> receiveStock(
@@ -58,7 +51,12 @@ public class InventoryController {
                     .body(ApiEnvelope.fail(ApiError.of("INVALID_QUANTITY", "Quantity must be positive")));
         }
 
-        UUID accountId = resolveAccountId();
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
+
         InventoryMovement movement = new InventoryMovement(
                 storeId, accountId, request.productId(),
                 "receive", request.quantity(), null, null);
@@ -68,15 +66,28 @@ public class InventoryController {
 
     /**
      * Creates an inventory movement (used by other services like sales and refunds).
-     *
-     * @param storeId the store
-     * @param request the movement details
-     * @return the created movement
+     * Enforces oversell protection: if allow-negative-stock is false, sale movements
+     * that would drive stock below zero are rejected.
      */
     @PostMapping("/movements")
     public ResponseEntity<ApiEnvelope<MovementResponse>> createMovement(
             @PathVariable UUID storeId, @RequestBody CreateMovementRequest request) {
-        UUID accountId = resolveAccountId();
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
+
+        // Oversell protection (A5): block sale movements that would drive stock below zero
+        if (!allowNegativeStock && request.quantity() < 0) {
+            int currentStock = movementRepository.calculateStock(storeId, request.productId());
+            if (currentStock + request.quantity() < 0) {
+                return ResponseEntity.status(409)
+                        .body(ApiEnvelope.fail(ApiError.of("INSUFFICIENT_STOCK",
+                                "Insufficient stock. Current: " + currentStock + ", requested: " + Math.abs(request.quantity()))));
+            }
+        }
+
         InventoryMovement movement = new InventoryMovement(
                 storeId, accountId, request.productId(),
                 request.movementType(), request.quantity(),
@@ -87,10 +98,6 @@ public class InventoryController {
 
     /**
      * Gets current stock level for a specific product.
-     *
-     * @param storeId the store ID
-     * @param productId the product ID
-     * @return current stock quantity
      */
     @GetMapping("/stock/{productId}")
     public ResponseEntity<ApiEnvelope<StockResponse>> getStock(
@@ -101,9 +108,6 @@ public class InventoryController {
 
     /**
      * Lists all inventory movements for the store.
-     *
-     * @param storeId the store ID
-     * @return list of movements ordered by most recent first
      */
     @GetMapping("/movements")
     public ResponseEntity<ApiEnvelope<List<MovementResponse>>> listMovements(@PathVariable UUID storeId) {
@@ -114,13 +118,8 @@ public class InventoryController {
         return ResponseEntity.ok(ApiEnvelope.ok(movements));
     }
 
-    /**
-     * Resolves the current account ID from the request context.
-     *
-     * @return the account UUID
-     */
-    private UUID resolveAccountId() {
+    private UUID requireAccountId() {
         TenantContext context = RequestContextHolder.get();
-        return context.accountId() != null ? context.accountId() : FALLBACK_ACCOUNT_ID;
+        return context.accountId();
     }
 }

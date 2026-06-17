@@ -1,5 +1,6 @@
 package com.smartpos.sales.domain;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,4 +23,10 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
      */
     @EntityGraph(attributePaths = "items")
     List<Sale> findByStoreId(UUID storeId);
+
+    /**
+     * Finds sales for a store within a time range (for date-scoped reporting).
+     */
+    @EntityGraph(attributePaths = "items")
+    List<Sale> findByStoreIdAndCreatedAtBetween(UUID storeId, Instant from, Instant to);
 }

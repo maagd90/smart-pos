@@ -39,20 +39,20 @@ public class SaleItem {
     @Column(name = "line_total", nullable = false)
     private BigDecimal lineTotal;
 
+    @Column(name = "cost_price", nullable = false)
+    private BigDecimal costPrice;
+
+    @Column(name = "line_cost", nullable = false)
+    private BigDecimal lineCost;
+
     protected SaleItem() {
     }
 
     /**
-     * Creates a sale item.
-     *
-     * @param sale the parent sale
-     * @param productId the product ID
-     * @param productName the product name
-     * @param quantity quantity sold
-     * @param unitPrice price per unit
-     * @param lineTotal total for this line
+     * Creates a sale item with cost tracking.
      */
-    public SaleItem(Sale sale, UUID productId, String productName, int quantity, BigDecimal unitPrice, BigDecimal lineTotal) {
+    public SaleItem(Sale sale, UUID productId, String productName, int quantity,
+                    BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal costPrice, BigDecimal lineCost) {
         this.id = UUID.randomUUID();
         this.sale = sale;
         this.productId = productId;
@@ -60,33 +60,17 @@ public class SaleItem {
         this.quantity = quantity;
         this.unitPrice = unitPrice;
         this.lineTotal = lineTotal;
+        this.costPrice = costPrice;
+        this.lineCost = lineCost;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public Sale getSale() {
-        return sale;
-    }
-
-    public UUID getProductId() {
-        return productId;
-    }
-
-    public String getProductName() {
-        return productName;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public BigDecimal getUnitPrice() {
-        return unitPrice;
-    }
-
-    public BigDecimal getLineTotal() {
-        return lineTotal;
-    }
+    public UUID getId() { return id; }
+    public Sale getSale() { return sale; }
+    public UUID getProductId() { return productId; }
+    public String getProductName() { return productName; }
+    public int getQuantity() { return quantity; }
+    public BigDecimal getUnitPrice() { return unitPrice; }
+    public BigDecimal getLineTotal() { return lineTotal; }
+    public BigDecimal getCostPrice() { return costPrice; }
+    public BigDecimal getLineCost() { return lineCost; }
 }

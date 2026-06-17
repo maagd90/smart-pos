@@ -28,13 +28,15 @@ public record SaleResponse(UUID id, UUID storeId, BigDecimal total, String curre
      * Sale item response.
      */
     public record SaleItemResponse(UUID productId, String productName, int quantity,
-                                   BigDecimal unitPrice, BigDecimal lineTotal) {
+                                   BigDecimal unitPrice, BigDecimal lineTotal,
+                                   BigDecimal costPrice, BigDecimal lineCost) {
         /**
          * Creates from domain entity.
          */
         public static SaleItemResponse from(SaleItem item) {
             return new SaleItemResponse(item.getProductId(), item.getProductName(),
-                    item.getQuantity(), item.getUnitPrice(), item.getLineTotal());
+                    item.getQuantity(), item.getUnitPrice(), item.getLineTotal(),
+                    item.getCostPrice(), item.getLineCost());
         }
     }
 }

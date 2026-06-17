@@ -36,3 +36,5 @@ integration:
     url: ${SALES_SERVICE_URL:http://sales-service:8106}
   refunds-service:
     url: ${REFUNDS_SERVICE_URL:http://refunds-service:8107}
+  tenant-service:
+    url: ${TENANT_SERVICE_URL:http://tenant-admin-service:8102}

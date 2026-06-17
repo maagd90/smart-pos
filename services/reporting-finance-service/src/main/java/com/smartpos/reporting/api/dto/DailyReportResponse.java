@@ -5,22 +5,21 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Response DTO for a daily financial report.
- *
- * <p>In Milestone 1, this is a simplified aggregation. Full P&L reporting
- * with cost-of-goods-sold and expense tracking is planned for later milestones.</p>
+ * Response DTO for a daily financial report with full COGS-based gross profit.
  *
  * @param storeId the store ID
  * @param date the report date
- * @param grossRevenue total sales revenue for the day
+ * @param revenue total sales revenue for the day
+ * @param cogs cost of goods sold (sum of cost_price × quantity for all sales)
  * @param refunds total refunds for the day
- * @param grossProfit grossRevenue minus refunds (simplified for Milestone 1)
+ * @param grossProfit revenue - cogs - refunds
  * @param currency the currency
  */
 public record DailyReportResponse(
         UUID storeId,
         LocalDate date,
-        BigDecimal grossRevenue,
+        BigDecimal revenue,
+        BigDecimal cogs,
         BigDecimal refunds,
         BigDecimal grossProfit,
         String currency
