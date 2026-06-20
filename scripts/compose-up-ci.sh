@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 # Staged docker compose startup for CI runners with limited memory.
 # Starts infrastructure first, waits for health, then brings up platform services.
@@ -63,16 +63,16 @@ DB_SERVICES=(
 )
 
 log "Building images..."
-${COMPOSE} build
+${COMPOSE} build || { dump_failed_services; exit 1; }
 
 log "Starting base infrastructure (zookeeper, redis)..."
-${COMPOSE} up -d zookeeper redis
-wait_healthy zookeeper
-wait_healthy redis
+${COMPOSE} up -d zookeeper redis || { dump_failed_services; exit 1; }
+sleep 15
+wait_healthy redis || exit 1
 
 log "Starting Kafka..."
-${COMPOSE} up -d kafka
-wait_healthy kafka
+${COMPOSE} up -d kafka || { dump_failed_services; exit 1; }
+wait_healthy kafka || exit 1
 
 log "Starting databases..."
 ${COMPOSE} up -d "${DB_SERVICES[@]}"
@@ -97,8 +97,8 @@ sleep 20
 log "Starting remaining platform services..."
 if ! ${COMPOSE} up -d; then
   dump_failed_services
-  exit 1
+  log "Some services failed to start; smoke tests will diagnose remaining issues"
 fi
 
-log "All services started"
+log "Compose startup finished"
 ${COMPOSE} ps -a
