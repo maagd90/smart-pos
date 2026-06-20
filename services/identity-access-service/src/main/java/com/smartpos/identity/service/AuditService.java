@@ -35,6 +35,15 @@ public class AuditService {
      */
     public void record(UUID accountId, UUID userId, String action, String resourceType,
                        UUID resourceId, String details, String ipAddress) {
-        auditLogRepository.save(new AuditLog(accountId, userId, action, resourceType, resourceId, details, ipAddress));
+        auditLogRepository.save(new AuditLog(accountId, userId, action, resourceType, resourceId,
+                toJsonDetails(details), ipAddress));
+    }
+
+    private String toJsonDetails(String details) {
+        if (details == null) {
+            return null;
+        }
+        String escaped = details.replace("\\", "\\\\").replace("\"", "\\\"");
+        return "{\"message\":\"" + escaped + "\"}";
     }
 }
