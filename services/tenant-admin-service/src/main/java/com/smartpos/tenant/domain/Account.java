@@ -65,4 +65,6 @@ public class Account {
     public String getStatus() { return status; }
 
     public Instant getCreatedAt() { return createdAt; }
+
+    public void setStatus(String status) { this.status = status; }
 }

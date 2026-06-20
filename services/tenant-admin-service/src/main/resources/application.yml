@@ -23,6 +23,8 @@ spring:
 integration:
   identity-service:
     url: ${INTEGRATION_IDENTITY_SERVICE_URL:http://identity-access-service:8101}
+  billing-service:
+    url: ${INTEGRATION_BILLING_SERVICE_URL:http://billing-subscription-service:8103}
 
 eureka:
   instance:

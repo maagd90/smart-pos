@@ -50,6 +50,8 @@ cp .env.example .env
 | `DEFAULT_CURRENCY` | Default currency for new accounts (e.g. `AED`) |
 | `DEFAULT_LOCALE` | Default locale (e.g. `en-AE`) |
 | `DEFAULT_TIMEZONE` | Default timezone (e.g. `Asia/Dubai`) |
+| `BOOTSTRAP_ADMIN_EMAIL` | Platform admin email seeded on first startup |
+| `BOOTSTRAP_ADMIN_PASSWORD` | Platform admin password (change in production) |
 
 You usually do not need to change these for a first local run.
 
@@ -108,6 +110,28 @@ You should see `"status":"UP"` (or similar) in health responses.
 
 Both scripts exit with code `0` on success and `1` on failure.
 
+## Admin web UI
+
+```bash
+cd web-client
+npm ci
+npm run dev
+```
+
+Open http://localhost:3000 and sign in with the bootstrap credentials from `.env` (default `admin@smartpos.local` / `changeme123`).
+
+### Happy-path checklist
+
+1. Platform admin → **Accounts** — create subscriber org with owner credentials
+2. Assign a **business** plan (5 stores) from the plan dropdown
+3. **AI Keys** — rotate a key (only last 4 digits are shown after save)
+4. Log out → sign in as account owner → **Stores** — create Branch A and B
+5. **Users** — add cashier; **Role Assignment** — assign `cashier` role scoped to Branch A
+6. Log in as cashier — header store picker shows Branch A only
+7. Log in as store manager (or owner) → **Store Settings**, **Refund Policy**, **Report Settings**
+
+The developer API dashboard is at `/dev` (preserved from earlier milestones).
+
 > **Local dev escape hatch:** set `SMOKE_TEST_MODE=mock` to skip live platform checks when
 > debugging infrastructure locally. CI always runs the real checks.
 
@@ -154,6 +178,12 @@ Build the web client:
 
 ```bash
 cd web-client && npm ci && npm run build && cd ..
+```
+
+Run the admin UI in dev mode (requires gateway at `:8080`):
+
+```bash
+cd web-client && npm run dev
 ```
 
 Type-check the mobile client:

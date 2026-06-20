@@ -13,6 +13,7 @@ import com.smartpos.tenant.domain.Account;
 import com.smartpos.tenant.domain.AccountRepository;
 import com.smartpos.tenant.domain.Store;
 import com.smartpos.tenant.domain.StoreRepository;
+import com.smartpos.tenant.integration.BillingClient;
 import com.smartpos.tenant.integration.IdentityRoleProvisioningClient;
 import java.net.URI;
 import java.util.List;
@@ -33,13 +34,16 @@ public class AccountController {
     private final AccountRepository accountRepository;
     private final StoreRepository storeRepository;
     private final IdentityRoleProvisioningClient roleProvisioningClient;
+    private final BillingClient billingClient;
 
     public AccountController(AccountRepository accountRepository,
                              StoreRepository storeRepository,
-                             IdentityRoleProvisioningClient roleProvisioningClient) {
+                             IdentityRoleProvisioningClient roleProvisioningClient,
+                             BillingClient billingClient) {
         this.accountRepository = accountRepository;
         this.storeRepository = storeRepository;
         this.roleProvisioningClient = roleProvisioningClient;
+        this.billingClient = billingClient;
     }
 
     @PostMapping
@@ -110,6 +114,13 @@ public class AccountController {
         }
         if (request == null || request.name() == null || request.name().isBlank()) {
             return badRequest("Store name is required");
+        }
+
+        int currentStoreCount = storeRepository.findByAccountId(accountId).size();
+        var gateDecision = billingClient.evaluateStoreCreate(accountId, currentStoreCount);
+        if (gateDecision.action() == com.smartpos.contracts.subscription.SubscriptionGateDecision.Action.UPGRADE_REQUIRED) {
+            return ResponseEntity.status(402)
+                    .body(ApiEnvelope.fail(ApiError.of("UPGRADE_REQUIRED", gateDecision.reason())));
         }
 
         String timezone = request.timezone() != null && !request.timezone().isBlank()

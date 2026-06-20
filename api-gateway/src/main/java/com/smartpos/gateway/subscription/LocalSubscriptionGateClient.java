@@ -1,6 +1,7 @@
 package com.smartpos.gateway.subscription;
 
 import com.smartpos.contracts.subscription.SubscriptionGateDecision;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -20,6 +21,7 @@ import reactor.core.publisher.Mono;
  * </ul>
  */
 @Component
+@ConditionalOnProperty(name = "gateway.subscription.remote-enabled", havingValue = "false")
 public class LocalSubscriptionGateClient implements SubscriptionGateClient {
 
     @Override

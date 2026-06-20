@@ -13,7 +13,7 @@ and end-to-end business flows verified by smoke and e2e tests.
 ### What is included
 
 - Spring Cloud Gateway as the single public API entry point
-- JWT validation, Redis rate limiting, and subscription gate foundations
+- JWT validation, Redis rate limiting, and subscription gate (billing-service backed)
 - Eureka service discovery with Docker-friendly instance registration
 - Kafka as the async event broker (inventory updates, outbox pattern)
 - Redis for cache, rate limiting, and session infrastructure
@@ -22,21 +22,21 @@ and end-to-end business flows verified by smoke and e2e tests.
 - Shared contracts library (API envelope, auth principal, domain events, tenant context)
 - Request context filter propagating gateway-forwarded identity headers
 - 12 runnable domain services with core business APIs
-- Dev-login for local and CI testing
-- React + TypeScript web client skeleton
+- Bootstrap platform admin (idempotent seed from env vars)
+- Production admin web UI (`web-client`) with login, platform console, account onboarding, store config
+- Dev-login for CI/scripts; dev dashboard at `/dev` route
+- React + TypeScript web client
 - React Native + Expo mobile client skeleton
 - Docker Compose orchestration with staged CI startup
 - GitHub Actions CI pipeline (build, compose validation, smoke, e2e)
 - Smoke test proving all services respond through the gateway
 - E2E business smoke test (account → store → product → inventory → sale → refund → report)
-- Temporary CI mock mode for smoke/e2e scripts while platform services stabilize
 
 ### What is NOT included (subsequent milestones)
 
-- Real JWT issuance for production auth flows (beyond dev-login)
-- Real subscription enforcement (Billing service — Milestone 7)
 - Real payment, WhatsApp, or LLM integrations (stubbed behind interfaces)
 - Offline mobile sync
+- Full POS, inventory, and operational screens in the admin UI (nav shows "Coming soon")
 
 ---
 
@@ -70,6 +70,38 @@ docker compose down -v
 # or
 ./scripts/local-clean.sh
 ```
+
+## Admin web UI
+
+After the stack is up, start the admin UI:
+
+```bash
+cd web-client
+npm ci
+npm run dev
+```
+
+Open http://localhost:3000 — the Vite dev server proxies `/api` to the gateway at `:8080`.
+
+### Bootstrap platform admin
+
+On first startup, `identity-access-service` seeds a platform admin when these env vars are set (defaults in `.env.example`):
+
+| Variable | Default |
+|----------|---------|
+| `BOOTSTRAP_ADMIN_EMAIL` | `admin@smartpos.local` |
+| `BOOTSTRAP_ADMIN_PASSWORD` | `changeme123` |
+
+Sign in at `/login` with those credentials. The seed is idempotent — it skips if the user already exists.
+
+### Onboarding happy path (manual)
+
+1. **Platform admin** — create subscriber account (with owner), assign plan, rotate AI key
+2. **Account owner** — log in as owner, create stores (upgrade banner if plan limit hit), add users, assign per-store roles
+3. **Cashier** — log in; store picker shows only assigned stores
+4. **Store manager** — configure store settings, refund policy, report settings for selected store
+
+The developer E2E dashboard remains at `/dev` for scripted API flow testing.
 
 Alternative startup:
 
@@ -187,14 +219,12 @@ All values are configurable via environment variables.
 
 ## Subscription Gate
 
-The gateway includes a subscription gate filter that evaluates account subscription
-status before forwarding business requests.
-
-**Milestone 1:** The gate uses a local stub that always allows requests. This
-establishes the pattern so that when the Billing and Subscription service is built
-(Milestone 7), the stub is replaced with a real service call.
+The gateway subscription gate calls `billing-subscription-service` to evaluate plan limits.
+Store creation returns HTTP 402 with `UPGRADE_REQUIRED` when the account exceeds `max_stores`.
 
 Possible gate decisions: `ALLOW`, `DENY`, `READ_ONLY`, `UPGRADE_REQUIRED`.
+
+Set `gateway.subscription.remote-enabled=false` to use the local allow-all stub during development.
 
 ## Stubbed External Integrations
 
