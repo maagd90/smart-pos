@@ -7,15 +7,6 @@ import com.smartpos.contracts.context.TenantContext;
 import com.smartpos.contracts.security.RequirePermission;
 import com.smartpos.contracts.security.RequireStoreAccess;
 import com.smartpos.reporting.api.dto.DailyReportResponse;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -24,17 +15,24 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
-/**
- * REST controller for generating financial reports.
- *
- * <p>Reports are date-scoped to the store's timezone and include COGS-based
- * gross profit calculation.</p>
- */
 @RestController
 @RequestMapping("/api/v1/stores/{storeId}/reports")
 @RequireStoreAccess
 public class ReportController {
+
+    private static final Logger log = LoggerFactory.getLogger(ReportController.class);
 
     private final String salesServiceUrl;
     private final String refundsServiceUrl;
@@ -52,12 +50,6 @@ public class ReportController {
         this.restTemplate = restTemplate;
     }
 
-    /**
-     * Generates a daily financial report for the specified store.
-     *
-     * <p>Scopes sales and refunds to the report date in the store's timezone,
-     * using the half-open range [date 00:00, date+1 00:00).</p>
-     */
     @GetMapping("/daily")
     @RequirePermission("reports.view")
     public ResponseEntity<ApiEnvelope<DailyReportResponse>> getDailyReport(
@@ -70,12 +62,10 @@ public class ReportController {
                     .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required")));
         }
 
-        // Resolve store timezone and currency from tenant service
         StoreConfig storeConfig = resolveStoreConfig(storeId, context.accountId());
         ZoneId storeTimezone = storeConfig.timezone();
         LocalDate reportDate = date != null ? LocalDate.parse(date) : LocalDate.now(storeTimezone);
 
-        // Compute date boundaries in UTC for querying
         ZonedDateTime startOfDay = reportDate.atStartOfDay(storeTimezone);
         ZonedDateTime endOfDay = reportDate.plusDays(1).atStartOfDay(storeTimezone);
         Instant from = startOfDay.toInstant();
@@ -86,10 +76,9 @@ public class ReportController {
         BigDecimal refundsTotal = BigDecimal.ZERO;
         String currency = storeConfig.currency();
 
-        // Fetch sales within date range
         try {
             String salesUrl = salesServiceUrl + "/api/v1/stores/" + storeId + "/sales?from="
-                    + from.toString() + "&to=" + to.toString();
+                    + from + "&to=" + to;
             @SuppressWarnings("unchecked")
             Map<String, Object> salesResponse = restTemplate.getForObject(salesUrl, Map.class);
             if (salesResponse != null && salesResponse.get("data") instanceof List<?> salesList) {
@@ -99,11 +88,6 @@ public class ReportController {
                         if (total != null) {
                             revenue = revenue.add(new BigDecimal(total.toString()));
                         }
-                        Object saleCurrency = saleMap.get("currency");
-                        if (saleCurrency != null) {
-                            currency = saleCurrency.toString();
-                        }
-                        // Sum COGS from line items
                         if (saleMap.get("items") instanceof List<?> items) {
                             for (Object itemObj : items) {
                                 if (itemObj instanceof Map<?, ?> itemMap) {
@@ -117,14 +101,16 @@ public class ReportController {
                     }
                 }
             }
-        } catch (Exception e) {
-            System.err.println("Warning: Could not reach sales service: " + e.getMessage());
+        } catch (RestClientException e) {
+            log.error("Could not reach sales service for daily report: {}", e.getMessage(), e);
+            return ResponseEntity.status(502)
+                    .body(ApiEnvelope.fail(ApiError.of("SALES_SERVICE_UNAVAILABLE",
+                            "Unable to fetch sales data for report")));
         }
 
-        // Fetch refunds within date range
         try {
             String refundsUrl = refundsServiceUrl + "/api/v1/stores/" + storeId + "/refunds?from="
-                    + from.toString() + "&to=" + to.toString();
+                    + from + "&to=" + to;
             @SuppressWarnings("unchecked")
             Map<String, Object> refundsResponse = restTemplate.getForObject(refundsUrl, Map.class);
             if (refundsResponse != null && refundsResponse.get("data") instanceof List<?> refundsList) {
@@ -137,45 +123,51 @@ public class ReportController {
                     }
                 }
             }
-        } catch (Exception e) {
-            System.err.println("Warning: Could not reach refunds service: " + e.getMessage());
+        } catch (RestClientException e) {
+            log.error("Could not reach refunds service for daily report: {}", e.getMessage(), e);
+            return ResponseEntity.status(502)
+                    .body(ApiEnvelope.fail(ApiError.of("REFUNDS_SERVICE_UNAVAILABLE",
+                            "Unable to fetch refunds data for report")));
         }
 
-        // grossProfit = revenue − COGS − refunds
         BigDecimal grossProfit = revenue.subtract(cogs).subtract(refundsTotal);
-
         DailyReportResponse report = new DailyReportResponse(
                 storeId, reportDate, revenue, cogs, refundsTotal, grossProfit, currency);
-
         return ResponseEntity.ok(ApiEnvelope.ok(report));
     }
 
-    /**
-     * Resolves the store timezone and currency from the tenant service.
-     * Falls back to Asia/Dubai timezone and USD currency if unavailable.
-     */
     private StoreConfig resolveStoreConfig(UUID storeId, UUID accountId) {
+        ZoneId timezone = ZoneId.of("Asia/Dubai");
+        String currency = "AED";
         try {
-            String url = tenantServiceUrl + "/api/v1/accounts/" + accountId + "/stores";
             @SuppressWarnings("unchecked")
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
-            if (response != null && response.get("data") instanceof List<?> stores) {
+            Map<String, Object> accountResponse = restTemplate.getForObject(
+                    tenantServiceUrl + "/api/v1/accounts/" + accountId, Map.class);
+            if (accountResponse != null && accountResponse.get("data") instanceof Map<?, ?> accountMap) {
+                Object accountCurrency = accountMap.get("currency");
+                if (accountCurrency != null && !accountCurrency.toString().isBlank()) {
+                    currency = accountCurrency.toString();
+                }
+            }
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> storesResponse = restTemplate.getForObject(
+                    tenantServiceUrl + "/api/v1/accounts/" + accountId + "/stores", Map.class);
+            if (storesResponse != null && storesResponse.get("data") instanceof List<?> stores) {
                 for (Object store : stores) {
-                    if (store instanceof Map<?, ?> storeMap) {
-                        if (storeId.toString().equals(storeMap.get("id"))) {
-                            Object tz = storeMap.get("timezone");
-                            Object cur = storeMap.get("currency");
-                            ZoneId timezone = tz != null ? ZoneId.of(tz.toString()) : ZoneId.of("Asia/Dubai");
-                            String currency = cur != null ? cur.toString() : "USD";
-                            return new StoreConfig(timezone, currency);
+                    if (store instanceof Map<?, ?> storeMap && storeId.toString().equals(String.valueOf(storeMap.get("id")))) {
+                        Object tz = storeMap.get("timezone");
+                        if (tz != null && !tz.toString().isBlank()) {
+                            timezone = ZoneId.of(tz.toString());
                         }
+                        break;
                     }
                 }
             }
         } catch (Exception e) {
-            // Fallback if tenant service is unreachable
+            log.warn("Could not fully resolve store config for store {} account {}: {}", storeId, accountId, e.getMessage());
         }
-        return new StoreConfig(ZoneId.of("Asia/Dubai"), "USD");
+        return new StoreConfig(timezone, currency);
     }
 
     private record StoreConfig(ZoneId timezone, String currency) {}

@@ -1,5 +1,7 @@
 package com.smartpos.sales.config;
 
+import com.smartpos.contracts.context.TenantContextRestTemplateInterceptor;
+import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -12,6 +14,8 @@ public class RestClientConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        return new RestTemplate();
+        RestTemplate restTemplate = new RestTemplate();
+        restTemplate.setInterceptors(List.of(new TenantContextRestTemplateInterceptor()));
+        return restTemplate;
     }
 }

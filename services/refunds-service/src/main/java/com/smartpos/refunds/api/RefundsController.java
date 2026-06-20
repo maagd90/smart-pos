@@ -10,6 +10,7 @@ import com.smartpos.refunds.api.dto.CreateRefundRequest;
 import com.smartpos.refunds.api.dto.RefundResponse;
 import com.smartpos.refunds.domain.Refund;
 import com.smartpos.refunds.domain.RefundRepository;
+import com.smartpos.refunds.integration.TenantClient;
 import com.smartpos.refunds.outbox.OutboxEvent;
 import com.smartpos.refunds.outbox.OutboxRepository;
 import java.net.URI;
@@ -28,12 +29,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * REST controller for managing refund transactions.
- *
- * <p>Creates refunds against original sales and writes outbox events
- * for inventory return movements (resellable items only).</p>
- */
 @RestController
 @RequestMapping("/api/v1/stores/{storeId}/refunds")
 @RequireStoreAccess
@@ -41,15 +36,16 @@ public class RefundsController {
 
     private final RefundRepository refundRepository;
     private final OutboxRepository outboxRepository;
+    private final TenantClient tenantClient;
 
-    public RefundsController(RefundRepository refundRepository, OutboxRepository outboxRepository) {
+    public RefundsController(RefundRepository refundRepository,
+                             OutboxRepository outboxRepository,
+                             TenantClient tenantClient) {
         this.refundRepository = refundRepository;
         this.outboxRepository = outboxRepository;
+        this.tenantClient = tenantClient;
     }
 
-    /**
-     * Creates a refund. Writes an outbox event for resellable item return movements.
-     */
     @PostMapping
     @Transactional
     @RequirePermission("refund.create")
@@ -69,8 +65,11 @@ public class RefundsController {
 
         String currency = request.currency();
         if (currency == null || currency.isBlank()) {
+            currency = tenantClient.getAccountCurrency(accountId);
+        }
+        if (currency == null || currency.isBlank()) {
             return ResponseEntity.badRequest()
-                    .body(ApiEnvelope.fail(ApiError.of("INVALID_REQUEST", "currency is required")));
+                    .body(ApiEnvelope.fail(ApiError.of("INVALID_REQUEST", "currency could not be resolved from account config")));
         }
 
         Refund refund = new Refund(storeId, accountId, request.saleId(), currency);
@@ -79,7 +78,6 @@ public class RefundsController {
         }
         refund = refundRepository.save(refund);
 
-        // Write outbox event for inventory return movements (resellable items only)
         List<Map<String, Object>> resellableItems = request.items().stream()
                 .filter(CreateRefundRequest.RefundItemRequest::resellable)
                 .map(i -> Map.<String, Object>of(
@@ -102,34 +100,44 @@ public class RefundsController {
                 .body(ApiEnvelope.ok(RefundResponse.from(refund)));
     }
 
-    /**
-     * Gets a refund by ID.
-     */
     @GetMapping("/{refundId}")
+    @RequirePermission("refund.view")
     public ResponseEntity<ApiEnvelope<RefundResponse>> getRefund(
             @PathVariable UUID storeId, @PathVariable UUID refundId) {
-        return refundRepository.findByIdAndStoreId(refundId, storeId)
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
+        return refundRepository.findByIdAndStoreIdAndAccountId(refundId, storeId, accountId)
                 .map(refund -> ResponseEntity.ok(ApiEnvelope.ok(RefundResponse.from(refund))))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Lists refunds for a store, optionally filtered by date range.
-     */
     @GetMapping
+    @RequirePermission("refund.view")
     public ResponseEntity<ApiEnvelope<List<RefundResponse>>> listRefunds(
             @PathVariable UUID storeId,
             @RequestParam(required = false) String from,
             @RequestParam(required = false) String to) {
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
         List<Refund> refunds;
         if (from != null && to != null) {
             Instant fromInstant = Instant.parse(from);
             Instant toInstant = Instant.parse(to);
-            refunds = refundRepository.findByStoreIdAndCreatedAtBetween(storeId, fromInstant, toInstant);
+            refunds = refundRepository.findByStoreIdAndAccountIdAndCreatedAtBetween(storeId, accountId, fromInstant, toInstant);
         } else {
-            refunds = refundRepository.findByStoreId(storeId);
+            refunds = refundRepository.findByStoreIdAndAccountId(storeId, accountId);
         }
         List<RefundResponse> responses = refunds.stream().map(RefundResponse::from).toList();
         return ResponseEntity.ok(ApiEnvelope.ok(responses));
+    }
+
+    private UUID requireAccountId() {
+        return RequestContextHolder.get().accountId();
     }
 }

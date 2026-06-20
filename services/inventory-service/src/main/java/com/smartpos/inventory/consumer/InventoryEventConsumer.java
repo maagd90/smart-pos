@@ -47,12 +47,12 @@ public class InventoryEventConsumer {
                 UUID productId = UUID.fromString(item.get("productId").asText());
                 int quantity = item.get("quantity").asInt();
 
-                // Check oversell if configured
                 if (!allowNegativeStock) {
                     int currentStock = movementRepository.calculateStock(storeId, productId);
                     if (currentStock - quantity < 0) {
-                        log.warn("Sale {} would cause negative stock for product {}. Current: {}, sale qty: {}. Processing anyway (sale already committed).",
-                                saleId, productId, currentStock, quantity);
+                        throw new IllegalStateException(
+                                "Sale " + saleId + " would cause negative stock for product " + productId
+                                        + ". Current: " + currentStock + ", sale qty: " + quantity);
                     }
                 }
 

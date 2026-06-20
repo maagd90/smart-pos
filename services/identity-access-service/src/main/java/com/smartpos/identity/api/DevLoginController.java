@@ -4,8 +4,17 @@ import com.smartpos.contracts.api.ApiEnvelope;
 import com.smartpos.contracts.api.ApiError;
 import com.smartpos.identity.api.dto.DevLoginRequest;
 import com.smartpos.identity.api.dto.DevLoginResponse;
-import com.smartpos.identity.domain.DevUserRepository;
-import com.smartpos.identity.security.JwtTokenService;
+import com.smartpos.identity.domain.PermissionRepository;
+import com.smartpos.identity.domain.User;
+import com.smartpos.identity.domain.UserRepository;
+import com.smartpos.identity.domain.UserRole;
+import com.smartpos.identity.domain.UserRoleRepository;
+import com.smartpos.identity.security.AuthTokenService;
+import com.smartpos.identity.service.AuditService;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,44 +22,29 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * Development-only authentication controller.
- *
- * <p><strong>WARNING:</strong> This endpoint is intended for local development
- * and automated testing ONLY. It must NEVER be enabled in production environments.
- * It issues JWT tokens without requiring a password or any credential verification.</p>
- *
- * <p>In production, authentication will be handled through proper OAuth2/OIDC flows
- * with password hashing and MFA support (planned for Milestone 2).</p>
- */
 @Profile({"local", "dev"})
 @RestController
 @RequestMapping("/api/v1/auth")
 public class DevLoginController {
 
-    private final DevUserRepository userRepository;
-    private final JwtTokenService tokenService;
+    private final UserRepository userRepository;
+    private final UserRoleRepository userRoleRepository;
+    private final PermissionRepository permissionRepository;
+    private final AuthTokenService tokenService;
+    private final AuditService auditService;
 
-    /**
-     * Creates the dev-login controller.
-     *
-     * @param userRepository repository for looking up dev users
-     * @param tokenService service for generating JWT tokens
-     */
-    public DevLoginController(DevUserRepository userRepository, JwtTokenService tokenService) {
+    public DevLoginController(UserRepository userRepository,
+                              UserRoleRepository userRoleRepository,
+                              PermissionRepository permissionRepository,
+                              AuthTokenService tokenService,
+                              AuditService auditService) {
         this.userRepository = userRepository;
+        this.userRoleRepository = userRoleRepository;
+        this.permissionRepository = permissionRepository;
         this.tokenService = tokenService;
+        this.auditService = auditService;
     }
 
-    /**
-     * Issues a JWT token for local development and testing.
-     *
-     * <p>This endpoint looks up a pre-seeded user by email and returns a signed
-     * JWT token without password verification. It is guarded by the local/dev Spring profiles.</p>
-     *
-     * @param request the login request containing the user's email
-     * @return a JWT access token wrapped in the standard API envelope
-     */
     @PostMapping("/dev-login")
     public ResponseEntity<ApiEnvelope<?>> devLogin(@RequestBody DevLoginRequest request) {
         if (request == null || request.email() == null || request.email().isBlank()) {
@@ -59,14 +53,29 @@ public class DevLoginController {
         }
 
         return userRepository.findByEmail(request.email())
-                .<ResponseEntity<ApiEnvelope<?>>>map(user -> {
-                    String token = tokenService.generateToken(user);
-                    DevLoginResponse response = new DevLoginResponse(
-                            token, "Bearer", tokenService.getExpirationSeconds());
-                    return ResponseEntity.ok(ApiEnvelope.ok(response));
-                })
+                .<ResponseEntity<ApiEnvelope<?>>>map(user -> issueDevToken(user))
                 .orElseGet(() -> ResponseEntity.status(404)
                         .body(ApiEnvelope.fail(ApiError.of("USER_NOT_FOUND",
                                 "No dev user found with email: " + request.email()))));
+    }
+
+    private ResponseEntity<ApiEnvelope<?>> issueDevToken(User user) {
+        Set<String> permissions = permissionRepository.findPermissionKeysByUserId(user.getId());
+        List<UserRole> roles = userRoleRepository.findByUserId(user.getId());
+        boolean hasAccountWideRole = roles.stream().anyMatch(r -> r.getStoreId() == null);
+        Set<UUID> accessibleStores = roles.stream()
+                .filter(r -> r.getStoreId() != null)
+                .map(UserRole::getStoreId)
+                .collect(Collectors.toSet());
+
+        String permissionStr = String.join(",", permissions);
+        String accessToken = tokenService.generateAccessToken(user, permissionStr, hasAccountWideRole, accessibleStores);
+
+        auditService.record(user.getAccountId(), user.getId(), "auth.dev_login", "user", user.getId(),
+                "Dev login for " + user.getEmail(), null);
+
+        DevLoginResponse response = new DevLoginResponse(
+                accessToken, "Bearer", tokenService.getExpirationSeconds());
+        return ResponseEntity.ok(ApiEnvelope.ok(response));
     }
 }

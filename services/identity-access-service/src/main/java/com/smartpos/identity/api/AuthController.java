@@ -14,6 +14,7 @@ import com.smartpos.identity.domain.UserRepository;
 import com.smartpos.identity.domain.UserRole;
 import com.smartpos.identity.domain.UserRoleRepository;
 import com.smartpos.identity.security.AuthTokenService;
+import com.smartpos.identity.service.AuditService;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
@@ -42,19 +43,22 @@ public class AuthController {
     private final PermissionRepository permissionRepository;
     private final AuthTokenService tokenService;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final AuditService auditService;
 
     public AuthController(UserRepository userRepository,
                           RefreshTokenRepository refreshTokenRepository,
                           UserRoleRepository userRoleRepository,
                           PermissionRepository permissionRepository,
                           AuthTokenService tokenService,
-                          BCryptPasswordEncoder passwordEncoder) {
+                          BCryptPasswordEncoder passwordEncoder,
+                          AuditService auditService) {
         this.userRepository = userRepository;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRoleRepository = userRoleRepository;
         this.permissionRepository = permissionRepository;
         this.tokenService = tokenService;
         this.passwordEncoder = passwordEncoder;
+        this.auditService = auditService;
     }
 
     /**
@@ -75,6 +79,8 @@ public class AuthController {
         String hashedPassword = passwordEncoder.encode(request.password());
         User user = new User(request.accountId(), request.email(), request.displayName(), hashedPassword);
         userRepository.save(user);
+        auditService.record(request.accountId(), user.getId(), "auth.register", "user", user.getId(),
+                "Registered user " + user.getEmail(), null);
 
         return ResponseEntity.status(201)
                 .body(ApiEnvelope.ok(new UserCreatedResponse(user.getId(), user.getEmail())));
@@ -93,6 +99,8 @@ public class AuthController {
         return userRepository.findByEmail(request.email())
                 .<ResponseEntity<ApiEnvelope<?>>>map(user -> {
                     if (user.getPasswordHash() == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+                        auditService.record(user.getAccountId(), user.getId(), "auth.login_failed", "user", user.getId(),
+                                "Invalid password for " + user.getEmail(), null);
                         return ResponseEntity.status(401)
                                 .body(ApiEnvelope.fail(ApiError.of("INVALID_CREDENTIALS", "Invalid email or password")));
                     }
@@ -127,6 +135,8 @@ public class AuthController {
                             accessToken, refreshTokenRaw, "Bearer",
                             tokenService.getExpirationSeconds(),
                             permissions, accessibleStores, hasAccountWideRole);
+                    auditService.record(user.getAccountId(), user.getId(), "auth.login", "user", user.getId(),
+                            "Successful login for " + user.getEmail(), null);
                     return ResponseEntity.ok(ApiEnvelope.ok(response));
                 })
                 .orElseGet(() -> ResponseEntity.status(401)

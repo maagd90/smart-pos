@@ -27,5 +27,5 @@ public interface InventoryMovementRepository extends JpaRepository<InventoryMove
      * @param storeId the store ID
      * @return list of movements ordered by creation time
      */
-    List<InventoryMovement> findByStoreIdOrderByCreatedAtDesc(UUID storeId);
+    List<InventoryMovement> findByStoreIdAndAccountIdOrderByCreatedAtDesc(UUID storeId, UUID accountId);
 }

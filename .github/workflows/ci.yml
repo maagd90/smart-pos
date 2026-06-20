@@ -21,8 +21,8 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: maven
-      - name: Build all modules
-        run: mvn -q -DskipTests package
+      - name: Build and test all modules
+        run: mvn -q test
 
   web-client-build:
     name: Web Client Build

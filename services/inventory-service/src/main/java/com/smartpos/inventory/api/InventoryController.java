@@ -74,6 +74,7 @@ public class InventoryController {
      * that would drive stock below zero are rejected.
      */
     @PostMapping("/movements")
+    @RequirePermission("inventory.adjust")
     public ResponseEntity<ApiEnvelope<MovementResponse>> createMovement(
             @PathVariable UUID storeId, @RequestBody CreateMovementRequest request) {
         UUID accountId = requireAccountId();
@@ -104,6 +105,7 @@ public class InventoryController {
      * Gets current stock level for a specific product.
      */
     @GetMapping("/stock/{productId}")
+    @RequirePermission("inventory.view")
     public ResponseEntity<ApiEnvelope<StockResponse>> getStock(
             @PathVariable UUID storeId, @PathVariable UUID productId) {
         int stock = movementRepository.calculateStock(storeId, productId);
@@ -114,8 +116,14 @@ public class InventoryController {
      * Lists all inventory movements for the store.
      */
     @GetMapping("/movements")
+    @RequirePermission("inventory.view")
     public ResponseEntity<ApiEnvelope<List<MovementResponse>>> listMovements(@PathVariable UUID storeId) {
-        List<MovementResponse> movements = movementRepository.findByStoreIdOrderByCreatedAtDesc(storeId)
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
+        List<MovementResponse> movements = movementRepository.findByStoreIdAndAccountIdOrderByCreatedAtDesc(storeId, accountId)
                 .stream()
                 .map(MovementResponse::from)
                 .toList();

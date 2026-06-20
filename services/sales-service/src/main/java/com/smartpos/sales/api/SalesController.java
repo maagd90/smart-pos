@@ -11,6 +11,8 @@ import com.smartpos.sales.api.dto.SaleResponse;
 import com.smartpos.sales.domain.Sale;
 import com.smartpos.sales.domain.SaleRepository;
 import com.smartpos.sales.integration.CatalogClient;
+import com.smartpos.sales.integration.InventoryStockClient;
+import com.smartpos.sales.integration.TenantClient;
 import com.smartpos.sales.outbox.OutboxEvent;
 import com.smartpos.sales.outbox.OutboxRepository;
 import java.math.BigDecimal;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,13 +30,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
  * REST controller for managing sales transactions.
- *
- * <p>Creates sale records, fetches cost prices from the catalog service,
- * and writes outbox events for inventory deduction.</p>
  */
 @RestController
 @RequestMapping("/api/v1/stores/{storeId}/sales")
@@ -42,19 +43,25 @@ public class SalesController {
 
     private final SaleRepository saleRepository;
     private final CatalogClient catalogClient;
+    private final InventoryStockClient inventoryStockClient;
+    private final TenantClient tenantClient;
     private final OutboxRepository outboxRepository;
+    private final boolean allowNegativeStock;
 
-    public SalesController(SaleRepository saleRepository, CatalogClient catalogClient,
-                           OutboxRepository outboxRepository) {
+    public SalesController(SaleRepository saleRepository,
+                           CatalogClient catalogClient,
+                           InventoryStockClient inventoryStockClient,
+                           TenantClient tenantClient,
+                           OutboxRepository outboxRepository,
+                           @Value("${inventory.allow-negative-stock:false}") boolean allowNegativeStock) {
         this.saleRepository = saleRepository;
         this.catalogClient = catalogClient;
+        this.inventoryStockClient = inventoryStockClient;
+        this.tenantClient = tenantClient;
         this.outboxRepository = outboxRepository;
+        this.allowNegativeStock = allowNegativeStock;
     }
 
-    /**
-     * Creates a new sale. Fetches cost prices server-side from the catalog service.
-     * Writes an outbox event for eventual inventory deduction.
-     */
     @PostMapping
     @Transactional
     @RequirePermission("sale.create")
@@ -72,16 +79,40 @@ public class SalesController {
         }
         UUID accountId = context.accountId();
 
-        // Resolve currency from request or context (no hardcoded fallback)
         String currency = request.currency();
         if (currency == null || currency.isBlank()) {
+            currency = tenantClient.getAccountCurrency(accountId);
+        }
+        if (currency == null || currency.isBlank()) {
             return ResponseEntity.badRequest()
-                    .body(ApiEnvelope.fail(ApiError.of("INVALID_REQUEST", "currency is required")));
+                    .body(ApiEnvelope.fail(ApiError.of("INVALID_REQUEST", "currency could not be resolved from account config")));
+        }
+
+        if (!allowNegativeStock) {
+            for (CreateSaleRequest.SaleItemRequest item : request.items()) {
+                try {
+                    Integer currentStock = inventoryStockClient.getCurrentStock(storeId, item.productId());
+                    if (currentStock == null) {
+                        return ResponseEntity.status(503)
+                                .body(ApiEnvelope.fail(ApiError.of("INVENTORY_UNAVAILABLE",
+                                        "Unable to verify stock for product " + item.productId())));
+                    }
+                    if (currentStock < item.quantity()) {
+                        return ResponseEntity.status(409)
+                                .body(ApiEnvelope.fail(ApiError.of("INSUFFICIENT_STOCK",
+                                        "Insufficient stock for product " + item.productId()
+                                                + ". Current: " + currentStock + ", requested: " + item.quantity())));
+                    }
+                } catch (InventoryStockClient.InventoryUnavailableException e) {
+                    return ResponseEntity.status(503)
+                            .body(ApiEnvelope.fail(ApiError.of("INVENTORY_UNAVAILABLE",
+                                    "Unable to verify stock for product " + item.productId())));
+                }
+            }
         }
 
         Sale sale = new Sale(storeId, accountId, currency);
         for (CreateSaleRequest.SaleItemRequest item : request.items()) {
-            // Fetch cost_price from catalog service (server-side, never trust client)
             BigDecimal costPrice = catalogClient.getCostPrice(storeId, item.productId());
             if (costPrice == null) {
                 return ResponseEntity.badRequest()
@@ -92,7 +123,6 @@ public class SalesController {
         }
         sale = saleRepository.save(sale);
 
-        // Write outbox event for inventory deduction (transactional outbox pattern)
         List<Map<String, Object>> lineItems = sale.getItems().stream()
                 .map(i -> Map.<String, Object>of(
                         "productId", i.getProductId().toString(),
@@ -112,34 +142,44 @@ public class SalesController {
                 .body(ApiEnvelope.ok(response));
     }
 
-    /**
-     * Gets a specific sale by ID.
-     */
     @GetMapping("/{saleId}")
+    @RequirePermission("sale.view")
     public ResponseEntity<ApiEnvelope<SaleResponse>> getSale(
             @PathVariable UUID storeId, @PathVariable UUID saleId) {
-        return saleRepository.findByIdAndStoreId(saleId, storeId)
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
+        return saleRepository.findByIdAndStoreIdAndAccountId(saleId, storeId, accountId)
                 .map(sale -> ResponseEntity.ok(ApiEnvelope.ok(SaleResponse.from(sale))))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    /**
-     * Lists sales for a store, optionally filtered by date range.
-     */
     @GetMapping
+    @RequirePermission("sale.view")
     public ResponseEntity<ApiEnvelope<List<SaleResponse>>> listSales(
             @PathVariable UUID storeId,
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String from,
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String to) {
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to) {
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
         List<Sale> sales;
         if (from != null && to != null) {
             Instant fromInstant = Instant.parse(from);
             Instant toInstant = Instant.parse(to);
-            sales = saleRepository.findByStoreIdAndCreatedAtBetween(storeId, fromInstant, toInstant);
+            sales = saleRepository.findByStoreIdAndAccountIdAndCreatedAtBetween(storeId, accountId, fromInstant, toInstant);
         } else {
-            sales = saleRepository.findByStoreId(storeId);
+            sales = saleRepository.findByStoreIdAndAccountId(storeId, accountId);
         }
         List<SaleResponse> responses = sales.stream().map(SaleResponse::from).toList();
         return ResponseEntity.ok(ApiEnvelope.ok(responses));
+    }
+
+    private UUID requireAccountId() {
+        return RequestContextHolder.get().accountId();
     }
 }

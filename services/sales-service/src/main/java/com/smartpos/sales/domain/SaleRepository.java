@@ -16,7 +16,7 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
      * Finds a sale by ID and store.
      */
     @EntityGraph(attributePaths = "items")
-    Optional<Sale> findByIdAndStoreId(UUID id, UUID storeId);
+    Optional<Sale> findByIdAndStoreIdAndAccountId(UUID id, UUID storeId, UUID accountId);
 
     /**
      * Finds all sales for a store (tenant-scoped).
@@ -25,14 +25,8 @@ public interface SaleRepository extends JpaRepository<Sale, UUID> {
     List<Sale> findByStoreIdAndAccountId(UUID storeId, UUID accountId);
 
     /**
-     * Finds all sales for a store.
-     */
-    @EntityGraph(attributePaths = "items")
-    List<Sale> findByStoreId(UUID storeId);
-
-    /**
      * Finds sales for a store within a time range (for date-scoped reporting).
      */
     @EntityGraph(attributePaths = "items")
-    List<Sale> findByStoreIdAndCreatedAtBetween(UUID storeId, Instant from, Instant to);
+    List<Sale> findByStoreIdAndAccountIdAndCreatedAtBetween(UUID storeId, UUID accountId, Instant from, Instant to);
 }

@@ -227,10 +227,22 @@ else
   fail "Daily report - response: $REPORT_RESPONSE"
 fi
 
-if echo "$REPORT_RESPONSE" | grep -q '"grossRevenue"'; then
-  pass "Daily report contains grossRevenue field"
+if echo "$REPORT_RESPONSE" | grep -q '"revenue"'; then
+  pass "Daily report contains revenue field"
 else
-  fail "Daily report missing grossRevenue field"
+  fail "Daily report missing revenue field"
+fi
+
+if echo "$REPORT_RESPONSE" | grep -q '"cogs"'; then
+  pass "Daily report contains cogs field"
+else
+  fail "Daily report missing cogs field"
+fi
+
+if echo "$REPORT_RESPONSE" | grep -q '"grossProfit"'; then
+  pass "Daily report contains grossProfit field"
+else
+  fail "Daily report missing grossProfit field"
 fi
 
 if echo "$REPORT_RESPONSE" | grep -q '"storeId"'; then

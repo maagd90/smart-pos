@@ -90,22 +90,33 @@ public class ProductController {
     @GetMapping
     @RequirePermission("catalog.view")
     public ResponseEntity<ApiEnvelope<List<ProductResponse>>> listProducts(@PathVariable UUID storeId) {
-        List<ProductResponse> products = productRepository.findByStoreId(storeId)
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
+        List<ProductResponse> products = productRepository.findByStoreIdAndAccountId(storeId, accountId)
                 .stream()
                 .map(ProductResponse::from)
                 .toList();
         return ResponseEntity.ok(ApiEnvelope.ok(products));
     }
 
-    /**
-     * Gets a specific product by ID.
-     */
     @GetMapping("/{productId}")
     @RequirePermission("catalog.view")
     public ResponseEntity<ApiEnvelope<ProductResponse>> getProduct(
             @PathVariable UUID storeId, @PathVariable UUID productId) {
-        return productRepository.findByIdAndStoreId(productId, storeId)
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
+        return productRepository.findByIdAndStoreIdAndAccountId(productId, storeId, accountId)
                 .map(product -> ResponseEntity.ok(ApiEnvelope.ok(ProductResponse.from(product))))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    private UUID requireAccountId() {
+        return RequestContextHolder.get().accountId();
     }
 }

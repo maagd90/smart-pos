@@ -16,14 +16,7 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
      * @param storeId the store ID
      * @return list of products in the store
      */
-    List<Product> findByStoreId(UUID storeId);
+    List<Product> findByStoreIdAndAccountId(UUID storeId, UUID accountId);
 
-    /**
-     * Finds a specific product by ID and store ID.
-     *
-     * @param id the product ID
-     * @param storeId the store ID
-     * @return the product if found
-     */
-    Optional<Product> findByIdAndStoreId(UUID id, UUID storeId);
+    Optional<Product> findByIdAndStoreIdAndAccountId(UUID id, UUID storeId, UUID accountId);
 }

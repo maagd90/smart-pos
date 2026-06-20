@@ -2,6 +2,9 @@ package com.smartpos.tenant.api;
 
 import com.smartpos.contracts.api.ApiEnvelope;
 import com.smartpos.contracts.api.ApiError;
+import com.smartpos.contracts.context.RequestContextHolder;
+import com.smartpos.contracts.context.TenantContext;
+import com.smartpos.contracts.security.RequirePermission;
 import com.smartpos.tenant.api.dto.AccountResponse;
 import com.smartpos.tenant.api.dto.CreateAccountRequest;
 import com.smartpos.tenant.api.dto.CreateStoreRequest;
@@ -10,6 +13,7 @@ import com.smartpos.tenant.domain.Account;
 import com.smartpos.tenant.domain.AccountRepository;
 import com.smartpos.tenant.domain.Store;
 import com.smartpos.tenant.domain.StoreRepository;
+import com.smartpos.tenant.integration.IdentityRoleProvisioningClient;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -22,37 +26,24 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * REST controller for managing tenant accounts and their stores.
- *
- * <p>Provides minimal account and store management operations for milestone 1.
- * All store operations are scoped to the parent account.</p>
- */
 @RestController
 @RequestMapping("/api/v1/accounts")
 public class AccountController {
 
     private final AccountRepository accountRepository;
     private final StoreRepository storeRepository;
+    private final IdentityRoleProvisioningClient roleProvisioningClient;
 
-    /**
-     * Creates the account controller.
-     *
-     * @param accountRepository repository for account persistence
-     * @param storeRepository repository for store persistence
-     */
-    public AccountController(AccountRepository accountRepository, StoreRepository storeRepository) {
+    public AccountController(AccountRepository accountRepository,
+                             StoreRepository storeRepository,
+                             IdentityRoleProvisioningClient roleProvisioningClient) {
         this.accountRepository = accountRepository;
         this.storeRepository = storeRepository;
+        this.roleProvisioningClient = roleProvisioningClient;
     }
 
-    /**
-     * Creates a new tenant account.
-     *
-     * @param request the account creation request
-     * @return the created account wrapped in an API envelope
-     */
     @PostMapping
+    @RequirePermission("accounts.manage")
     public ResponseEntity<ApiEnvelope<AccountResponse>> createAccount(@RequestBody CreateAccountRequest request) {
         if (request == null || request.name() == null || request.name().isBlank()) {
             return badRequest("Account name is required");
@@ -62,36 +53,58 @@ public class AccountController {
         String locale = request.locale() != null && !request.locale().isBlank() ? request.locale() : "en-AE";
 
         Account account = accountRepository.save(new Account(request.name(), currency, locale));
+        roleProvisioningClient.provisionRolesForAccount(account.getId());
         AccountResponse response = AccountResponse.from(account);
         return ResponseEntity
                 .created(URI.create("/api/v1/accounts/" + account.getId()))
                 .body(ApiEnvelope.ok(response));
     }
 
-    /**
-     * Lists all tenant accounts.
-     *
-     * @return list of accounts wrapped in an API envelope
-     */
     @GetMapping
+    @RequirePermission("accounts.manage")
     public ResponseEntity<ApiEnvelope<List<AccountResponse>>> listAccounts() {
-        List<AccountResponse> accounts = accountRepository.findAll()
-                .stream()
-                .map(AccountResponse::from)
-                .toList();
+        TenantContext context = RequestContextHolder.get();
+        if (context.accountId() == null && !context.platformAdmin()) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required")));
+        }
+
+        List<AccountResponse> accounts;
+        if (context.platformAdmin()) {
+            accounts = accountRepository.findAll().stream().map(AccountResponse::from).toList();
+        } else {
+            accounts = accountRepository.findById(context.accountId())
+                    .stream()
+                    .map(AccountResponse::from)
+                    .toList();
+        }
         return ResponseEntity.ok(ApiEnvelope.ok(accounts));
     }
 
-    /**
-     * Creates a new store under the specified account.
-     *
-     * @param accountId the parent account ID
-     * @param request the store creation request
-     * @return the created store wrapped in an API envelope
-     */
+    @GetMapping("/{accountId}")
+    public ResponseEntity<ApiEnvelope<AccountResponse>> getAccount(@PathVariable UUID accountId) {
+        TenantContext context = RequestContextHolder.get();
+        if (context.accountId() == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required")));
+        }
+        if (!context.platformAdmin() && !context.accountId().equals(accountId)) {
+            return ResponseEntity.status(403)
+                    .body(ApiEnvelope.fail(ApiError.of("FORBIDDEN", "Access denied to account")));
+        }
+        return accountRepository.findById(accountId)
+                .map(account -> ResponseEntity.ok(ApiEnvelope.ok(AccountResponse.from(account))))
+                .orElseGet(() -> notFound("Account not found"));
+    }
+
     @PostMapping("/{accountId}/stores")
+    @RequirePermission("stores.manage")
     public ResponseEntity<ApiEnvelope<StoreResponse>> createStore(
             @PathVariable UUID accountId, @RequestBody CreateStoreRequest request) {
+        if (!canAccessAccount(accountId)) {
+            return ResponseEntity.status(403)
+                    .body(ApiEnvelope.fail(ApiError.of("FORBIDDEN", "Access denied to account")));
+        }
         if (!accountRepository.existsById(accountId)) {
             return notFound("Account not found");
         }
@@ -103,30 +116,38 @@ public class AccountController {
                 ? request.timezone()
                 : "Asia/Dubai";
 
+        Account account = accountRepository.findById(accountId).orElseThrow();
         Store store = storeRepository.save(new Store(accountId, request.name(), timezone));
-        StoreResponse response = StoreResponse.from(store);
+        StoreResponse response = StoreResponse.from(store, account.getCurrency());
         return ResponseEntity
                 .created(URI.create("/api/v1/accounts/" + accountId + "/stores/" + store.getId()))
                 .body(ApiEnvelope.ok(response));
     }
 
-    /**
-     * Lists all stores for the specified account.
-     *
-     * @param accountId the parent account ID
-     * @return list of stores wrapped in an API envelope
-     */
     @GetMapping("/{accountId}/stores")
     public ResponseEntity<ApiEnvelope<List<StoreResponse>>> listStores(@PathVariable UUID accountId) {
+        if (!canAccessAccount(accountId)) {
+            return ResponseEntity.status(403)
+                    .body(ApiEnvelope.fail(ApiError.of("FORBIDDEN", "Access denied to account")));
+        }
         if (!accountRepository.existsById(accountId)) {
             return notFound("Account not found");
         }
 
+        Account account = accountRepository.findById(accountId).orElseThrow();
         List<StoreResponse> stores = storeRepository.findByAccountId(accountId)
                 .stream()
-                .map(StoreResponse::from)
+                .map(store -> StoreResponse.from(store, account.getCurrency()))
                 .toList();
         return ResponseEntity.ok(ApiEnvelope.ok(stores));
+    }
+
+    private boolean canAccessAccount(UUID accountId) {
+        TenantContext context = RequestContextHolder.get();
+        if (context.platformAdmin()) {
+            return true;
+        }
+        return context.accountId() != null && context.accountId().equals(accountId);
     }
 
     private <T> ResponseEntity<ApiEnvelope<T>> badRequest(String message) {
