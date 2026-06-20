@@ -82,12 +82,10 @@ jobs:
           docker compose up -d || {
             echo "=== docker compose ps ==="
             docker compose ps -a
-            echo "=== discovery-service logs ==="
-            docker compose logs --tail=80 discovery-service || true
-            echo "=== api-gateway logs ==="
-            docker compose logs --tail=80 api-gateway || true
-            echo "=== identity-access-service logs ==="
-            docker compose logs --tail=80 identity-access-service || true
+            for svc in discovery-service api-gateway identity-access-service inventory-service sales-service kafka zookeeper; do
+              echo "=== ${svc} logs ==="
+              docker compose logs --tail=80 "$svc" || true
+            done
             exit 1
           }
       - name: Run smoke tests

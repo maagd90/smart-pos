@@ -207,11 +207,11 @@ services:
     ports:
       - "8761:8761"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q UP"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q '\"UP\"'"]
       interval: 10s
       timeout: 5s
-      retries: 10
-      start_period: 30s
+      retries: 15
+      start_period: 60s
 
   api-gateway:
     build:
@@ -219,7 +219,7 @@ services:
       dockerfile: api-gateway/Dockerfile
     depends_on:
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       redis:
         condition: service_healthy
     environment:
@@ -249,7 +249,7 @@ services:
       identity-access-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -275,7 +275,7 @@ services:
       tenant-admin-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -299,7 +299,7 @@ services:
       billing-subscription-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -322,7 +322,7 @@ services:
       catalog-pricing-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -345,7 +345,7 @@ services:
       inventory-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -368,7 +368,7 @@ services:
       sales-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -391,7 +391,7 @@ services:
       refunds-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -414,7 +414,7 @@ services:
       customers-privacy-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -437,7 +437,7 @@ services:
       ai-deals-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -460,7 +460,7 @@ services:
       notifications-approvals-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -483,7 +483,7 @@ services:
       messaging-delivery-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
@@ -506,7 +506,7 @@ services:
       reporting-finance-db:
         condition: service_healthy
       discovery-service:
-        condition: service_healthy
+        condition: service_started
       kafka:
         condition: service_healthy
     environment:
