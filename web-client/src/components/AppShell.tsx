@@ -37,6 +37,9 @@ export function AppShell() {
           <Can permission="reports.export">
             <NavLink to="/store/report-settings">Report Settings</NavLink>
           </Can>
+          <CanAny permissions={['deal.approve', 'inventory.change.approve']}>
+            <NavLink to="/manager/notifications">Approvals</NavLink>
+          </CanAny>
           <span className="nav-disabled">POS (coming soon)</span>
           <span className="nav-disabled">Inventory (coming soon)</span>
           <NavLink to="/dev">Dev Dashboard</NavLink>

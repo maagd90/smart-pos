@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,7 +62,13 @@ public class NotificationService {
             }
             Notification notification = new Notification(
                     accountId, storeId, recipient.userId(), kind, refType, refId, title, body, expiresAt);
-            notificationRepository.save(notification);
+            try {
+                notificationRepository.save(notification);
+            } catch (DataIntegrityViolationException e) {
+                log.debug("Skipping duplicate notification for {} {} {} recipient {}",
+                        kind, refType, refId, recipient.userId());
+                continue;
+            }
             deliver(notification, recipient.email());
         }
     }

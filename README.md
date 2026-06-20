@@ -103,6 +103,29 @@ Sign in at `/login` with those credentials. The seed is idempotent — it skips 
 
 The developer E2E dashboard remains at `/dev` for scripted API flow testing.
 
+### Store manager notifications (mobile app or web shortcut)
+
+Store managers with `deal.approve` or `inventory.change.approve` permissions can receive
+approval notifications in two ways — choose one per device:
+
+| Option | How to install | How alerts arrive |
+|---|---|---|
+| **Native mobile app** | Install the Expo/React Native app (`mobile-client`) | Expo push notifications over the network |
+| **Web shortcut (PWA)** | Open the admin web UI on your phone → Share → **Add to Home Screen** (iOS) or **Install app** (Chrome/Android) | Browser notifications while the shortcut is installed; polls every 30 seconds when online |
+
+Both options use the same backend inbox at `/api/v1/notifications` and the same approval
+actions (Accept/Reject). The web shortcut opens at `/manager/notifications` when launched
+from the home screen.
+
+**Network required:** Push, email, and web polling all need network connectivity to the API gateway.
+
+**No duplicate notifications:** Each approval event creates at most one inbox row per recipient
+(enforced by a database unique constraint on kind + reference + user). The service also checks
+for an existing row before insert and skips delivery if a concurrent Kafka replay hits the
+unique constraint — so push, email, and inbox entries are never duplicated for the same event.
+On the web shortcut, browser alerts use the notification `id` as a tag and track seen IDs in
+local storage so the same pending item is not alerted twice.
+
 Alternative startup:
 
 ```bash
@@ -167,6 +190,7 @@ docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build -d
 | `/api/v1/stores/*/deals/**` | ai-deals-service |
 | `/api/v1/deals/**` | ai-deals-service |
 | `/api/v1/stores/*/approvals/**` | notifications-approvals-service |
+| `/api/v1/notifications/**` | notifications-approvals-service |
 | `/api/v1/stores/*/notifications/**` | notifications-approvals-service |
 | `/api/v1/stores/*/messages/**` | messaging-delivery-service |
 | `/api/v1/stores/*/reports/**` | reporting-finance-service |

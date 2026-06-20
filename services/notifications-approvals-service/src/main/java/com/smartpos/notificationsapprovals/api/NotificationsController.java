@@ -64,8 +64,9 @@ public class NotificationsController {
             return ResponseEntity.status(403).build();
         }
         requirePermissionForKind(notification.getKind());
+        DecidedVia via = request.via() != null ? request.via() : DecidedVia.MOBILE;
         DecisionExecutor.DecisionResult result = decisionExecutor.execute(
-                notification, request.decision(), DecidedVia.MOBILE);
+                notification, request.decision(), via);
         if (!result.success()) {
             return ResponseEntity.badRequest().body(ApiEnvelope.fail(
                     com.smartpos.contracts.api.ApiError.of("DECISION_FAILED", result.message())));

@@ -53,6 +53,10 @@ export function HomeRedirect() {
       navigate('/account/stores', { replace: true });
       return;
     }
+    if (permissions.has('deal.approve') || permissions.has('inventory.change.approve')) {
+      navigate('/manager/notifications', { replace: true });
+      return;
+    }
     if (permissions.has('store.settings.manage') || permissions.has('store.refund_policy.manage')) {
       navigate('/store/settings', { replace: true });
       return;
