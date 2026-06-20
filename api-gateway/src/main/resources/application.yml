@@ -23,6 +23,16 @@ spring:
           order: 0
           predicates:
             - Path=/api/v1/accounts/*/users/**
+        - id: identity-accessible-stores
+          uri: http://identity-access-service:8101
+          order: 0
+          predicates:
+            - Path=/api/v1/accounts/*/accessible-stores
+        - id: identity-roles
+          uri: http://identity-access-service:8101
+          order: 0
+          predicates:
+            - Path=/api/v1/accounts/*/roles
 
         # --- Tenant & Admin ---
         - id: tenant-accounts
@@ -30,6 +40,10 @@ spring:
           order: 100
           predicates:
             - Path=/api/v1/accounts/**
+        - id: tenant-store-settings
+          uri: http://tenant-admin-service:8102
+          predicates:
+            - Path=/api/v1/stores/*/settings/**
         - id: tenant-stores
           uri: http://tenant-admin-service:8102
           predicates:
@@ -37,6 +51,16 @@ spring:
             - Method=GET,PUT,DELETE
 
         # --- Billing & Subscription ---
+        - id: billing-gate
+          uri: http://billing-subscription-service:8103
+          order: 50
+          predicates:
+            - Path=/api/v1/billing/gate/**
+        - id: platform-billing
+          uri: http://billing-subscription-service:8103
+          order: 900
+          predicates:
+            - Path=/api/v1/platform/plans,/api/v1/platform/accounts/*/plan,/api/v1/platform/accounts/*/ai-entitlement,/api/v1/platform/ai-keys
         - id: billing
           uri: http://billing-subscription-service:8103
           predicates:
@@ -111,6 +135,10 @@ spring:
             - Path=/api/v1/stores/*/messages/**
 
         # --- Reporting & Finance ---
+        - id: report-settings
+          uri: http://reporting-finance-service:8112
+          predicates:
+            - Path=/api/v1/stores/*/report-settings/**
         - id: reports
           uri: http://reporting-finance-service:8112
           predicates:

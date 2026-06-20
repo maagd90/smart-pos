@@ -26,6 +26,11 @@ identity:
     issuer: ${JWT_ISSUER:smart-pos-platform}
     expiration-seconds: 3600
 
+bootstrap:
+  admin:
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+
 eureka:
   instance:
     prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:false}
