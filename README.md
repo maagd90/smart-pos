@@ -217,9 +217,8 @@ The GitHub Actions CI runs on every pull request and push:
 5. **Smoke Test** — staged Docker Compose startup, platform readiness wait, health verification
 6. **E2E Business Smoke Test** — full business flow through the gateway
 
-> **Milestone 1 stub:** CI can switch the smoke scripts into mock mode with `SMOKE_TEST_MODE=mock`
-> so the pipeline stays green while the real service checks are still stabilizing. Local runs
-> default to the live checks.
+> **Local dev escape hatch:** `SMOKE_TEST_MODE=mock` skips live checks in the smoke scripts.
+> CI always runs real smoke and e2e tests.
 
 ## Service Catalog
 
