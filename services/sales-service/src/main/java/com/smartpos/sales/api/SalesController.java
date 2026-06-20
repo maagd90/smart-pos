@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -89,24 +90,30 @@ public class SalesController {
         }
 
         if (!allowNegativeStock) {
+            Map<UUID, Integer> requiredByProduct = new HashMap<>();
             for (CreateSaleRequest.SaleItemRequest item : request.items()) {
+                requiredByProduct.merge(item.productId(), item.quantity(), Integer::sum);
+            }
+            for (Map.Entry<UUID, Integer> entry : requiredByProduct.entrySet()) {
+                UUID productId = entry.getKey();
+                int requiredQty = entry.getValue();
                 try {
-                    Integer currentStock = inventoryStockClient.getCurrentStock(storeId, item.productId());
+                    Integer currentStock = inventoryStockClient.getCurrentStock(storeId, productId);
                     if (currentStock == null) {
                         return ResponseEntity.status(503)
                                 .body(ApiEnvelope.fail(ApiError.of("INVENTORY_UNAVAILABLE",
-                                        "Unable to verify stock for product " + item.productId())));
+                                        "Unable to verify stock for product " + productId)));
                     }
-                    if (currentStock < item.quantity()) {
+                    if (currentStock < requiredQty) {
                         return ResponseEntity.status(409)
                                 .body(ApiEnvelope.fail(ApiError.of("INSUFFICIENT_STOCK",
-                                        "Insufficient stock for product " + item.productId()
-                                                + ". Current: " + currentStock + ", requested: " + item.quantity())));
+                                        "Insufficient stock for product " + productId
+                                                + ". Current: " + currentStock + ", requested: " + requiredQty)));
                     }
                 } catch (InventoryStockClient.InventoryUnavailableException e) {
                     return ResponseEntity.status(503)
                             .body(ApiEnvelope.fail(ApiError.of("INVENTORY_UNAVAILABLE",
-                                    "Unable to verify stock for product " + item.productId())));
+                                    "Unable to verify stock for product " + productId)));
                 }
             }
         }

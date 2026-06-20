@@ -10,6 +10,7 @@ COPY shared-contracts/src ./shared-contracts/src
 ARG SERVICE_MODULE
 COPY ${SERVICE_MODULE}/pom.xml ./${SERVICE_MODULE}/pom.xml
 COPY ${SERVICE_MODULE}/src ./${SERVICE_MODULE}/src
+RUN mvn -q -f smartpos-parent/pom.xml install -N -DskipTests
 RUN mvn -q -f shared-contracts/pom.xml install -DskipTests
 RUN mvn -q -f ${SERVICE_MODULE}/pom.xml package -DskipTests
 

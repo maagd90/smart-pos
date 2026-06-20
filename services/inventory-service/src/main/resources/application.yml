@@ -19,6 +19,9 @@ spring:
     consumer:
       auto-offset-reset: earliest
       group-id: inventory-service
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
 eureka:
   client:
@@ -32,4 +35,6 @@ management:
         include: health,info
 
 inventory:
+  # false (default): reject sale at creation time when stock is insufficient.
+  # Consumer always applies movements for committed sales; oversell is not checked there.
   allow-negative-stock: ${ALLOW_NEGATIVE_STOCK:false}

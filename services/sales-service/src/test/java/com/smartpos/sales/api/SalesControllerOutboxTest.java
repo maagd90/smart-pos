@@ -95,4 +95,22 @@ class SalesControllerOutboxTest {
         verify(outboxRepository).save(captor.capture());
         assertEquals("sale.created", captor.getValue().getEventType());
     }
+
+    @Test
+    void rejectsOversellBeforeCommitWithNoSaleOrOutbox() {
+        when(tenantClient.getAccountCurrency(accountId)).thenReturn("AED");
+        when(inventoryStockClient.getCurrentStock(storeId, productId)).thenReturn(1);
+
+        CreateSaleRequest request = new CreateSaleRequest(
+                List.of(new CreateSaleRequest.SaleItemRequest(productId, "Product", 2, new BigDecimal("1575"))),
+                null);
+
+        ResponseEntity<ApiEnvelope<com.smartpos.sales.api.dto.SaleResponse>> response =
+                salesController.createSale(storeId, request);
+
+        assertEquals(409, response.getStatusCode().value());
+        verify(saleRepository, never()).save(any());
+        verify(outboxRepository, never()).save(any());
+        verify(catalogClient, never()).getCostPrice(any(), any());
+    }
 }

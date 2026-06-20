@@ -38,4 +38,5 @@ integration:
     url: ${CATALOG_SERVICE_URL:http://catalog-pricing-service:8104}
 
 inventory:
+  # false (default): reject sale before commit with 409 INSUFFICIENT_STOCK.
   allow-negative-stock: ${ALLOW_NEGATIVE_STOCK:false}

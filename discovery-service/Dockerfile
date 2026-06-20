@@ -3,6 +3,7 @@ WORKDIR /workspace
 COPY smartpos-parent/pom.xml ./smartpos-parent/pom.xml
 COPY discovery-service/pom.xml ./discovery-service/pom.xml
 COPY discovery-service/src ./discovery-service/src
+RUN mvn -q -f smartpos-parent/pom.xml install -N -DskipTests
 RUN mvn -q -f discovery-service/pom.xml package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine

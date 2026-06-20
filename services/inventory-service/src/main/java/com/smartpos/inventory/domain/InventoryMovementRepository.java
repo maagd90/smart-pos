@@ -28,4 +28,10 @@ public interface InventoryMovementRepository extends JpaRepository<InventoryMove
      * @return list of movements ordered by creation time
      */
     List<InventoryMovement> findByStoreIdAndAccountIdOrderByCreatedAtDesc(UUID storeId, UUID accountId);
+
+    /**
+     * Returns true when a movement for the same event line was already applied.
+     */
+    boolean existsByStoreIdAndReferenceTypeAndReferenceIdAndProductId(
+            UUID storeId, String referenceType, UUID referenceId, UUID productId);
 }

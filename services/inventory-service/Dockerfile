@@ -6,6 +6,7 @@ COPY shared-contracts/pom.xml ./shared-contracts/pom.xml
 COPY shared-contracts/src ./shared-contracts/src
 COPY services/inventory-service/pom.xml ./services/inventory-service/pom.xml
 COPY services/inventory-service/src ./services/inventory-service/src
+RUN mvn -q -f smartpos-parent/pom.xml install -N -DskipTests
 RUN mvn -q -f shared-contracts/pom.xml install -DskipTests
 RUN mvn -q -f services/inventory-service/pom.xml test package -DskipTests
 
