@@ -3,7 +3,9 @@ package com.smartpos.gateway.filter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -34,9 +36,23 @@ public class CorrelationIdFilter implements GlobalFilter, Ordered {
 
         if (correlationId == null || correlationId.isBlank()) {
             correlationId = UUID.randomUUID().toString();
-            ServerHttpRequest mutated = exchange.getRequest().mutate()
-                    .header(CORRELATION_HEADER, correlationId)
-                    .build();
+            final String correlationIdFinal = correlationId;
+
+            // Build a mutable copy of the headers and add the correlation ID.
+            // Using ServerHttpRequestDecorator avoids UnsupportedOperationException on
+            // ReadOnlyHttpHeaders (Spring 6.1.x / Spring Boot 3.3+) that would occur if
+            // we tried to call exchange.getRequest().mutate().header() directly.
+            HttpHeaders updatedHeaders = new HttpHeaders();
+            exchange.getRequest().getHeaders().forEach(updatedHeaders::addAll);
+            updatedHeaders.add(CORRELATION_HEADER, correlationIdFinal);
+            HttpHeaders readOnlyUpdatedHeaders = HttpHeaders.readOnlyHttpHeaders(updatedHeaders);
+
+            ServerHttpRequest mutated = new ServerHttpRequestDecorator(exchange.getRequest()) {
+                @Override
+                public HttpHeaders getHeaders() {
+                    return readOnlyUpdatedHeaders;
+                }
+            };
             exchange = exchange.mutate().request(mutated).build();
         }
 

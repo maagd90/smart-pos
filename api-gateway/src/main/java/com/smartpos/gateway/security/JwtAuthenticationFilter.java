@@ -3,6 +3,7 @@ package com.smartpos.gateway.security;
 import io.jsonwebtoken.Claims;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -96,16 +97,27 @@ public class JwtAuthenticationFilter implements WebFilter {
                 exchange.getRequest().getHeaders().getFirst("X-Correlation-Id"))
                 .orElse(java.util.UUID.randomUUID().toString());
 
-        ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
-                .header("X-User-Id", userId != null ? userId : "")
-                .header("X-Account-Id", accountId != null ? accountId : "")
-                .header("X-Store-Id", storeId != null ? storeId : "")
-                .header("X-Platform-Admin", platformAdmin)
-                .header("X-Permissions", permissions != null ? permissions : "")
-                .header("X-Correlation-Id", correlationId)
-                .header("X-Account-Wide-Access", accountWideAccess != null ? accountWideAccess : "false")
-                .header("X-Accessible-Stores", accessibleStores != null ? accessibleStores : "")
-                .build();
+        // Build a mutable copy of headers with identity claims added.
+        // Using ServerHttpRequestDecorator avoids UnsupportedOperationException on
+        // ReadOnlyHttpHeaders (Spring 6.1.x / Spring Boot 3.3+).
+        HttpHeaders updatedHeaders = new HttpHeaders();
+        exchange.getRequest().getHeaders().forEach(updatedHeaders::addAll);
+        updatedHeaders.set("X-User-Id", userId != null ? userId : "");
+        updatedHeaders.set("X-Account-Id", accountId != null ? accountId : "");
+        updatedHeaders.set("X-Store-Id", storeId != null ? storeId : "");
+        updatedHeaders.set("X-Platform-Admin", platformAdmin);
+        updatedHeaders.set("X-Permissions", permissions != null ? permissions : "");
+        updatedHeaders.set("X-Correlation-Id", correlationId);
+        updatedHeaders.set("X-Account-Wide-Access", accountWideAccess != null ? accountWideAccess : "false");
+        updatedHeaders.set("X-Accessible-Stores", accessibleStores != null ? accessibleStores : "");
+        HttpHeaders readOnlyUpdatedHeaders = HttpHeaders.readOnlyHttpHeaders(updatedHeaders);
+
+        ServerHttpRequest mutatedRequest = new ServerHttpRequestDecorator(exchange.getRequest()) {
+            @Override
+            public HttpHeaders getHeaders() {
+                return readOnlyUpdatedHeaders;
+            }
+        };
 
         ServerWebExchange mutatedExchange = exchange.mutate().request(mutatedRequest).build();
 
