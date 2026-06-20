@@ -21,7 +21,7 @@ public class RequestContextConfig {
      * @return the filter registration bean
      */
     @Bean
-    public FilterRegistrationBean<RequestContextFilter> requestContextFilter() {
+    public FilterRegistrationBean<RequestContextFilter> smartposRequestContextFilterRegistration() {
         FilterRegistrationBean<RequestContextFilter> registration = new FilterRegistrationBean<>();
         registration.setFilter(new RequestContextFilter());
         registration.addUrlPatterns("/api/*");
