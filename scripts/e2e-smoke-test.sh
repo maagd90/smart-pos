@@ -118,6 +118,13 @@ LOGIN_RESPONSE=$(curl -sf -X POST "${GATEWAY_URL}/api/v1/auth/dev-login" \
 
 if [ -z "$LOGIN_RESPONSE" ]; then
   fail "Dev login - no response"
+  body_file=$(mktemp)
+  http_code=$(curl -sS -o "$body_file" -w "%{http_code}" -X POST "${GATEWAY_URL}/api/v1/auth/dev-login" \
+    -H "Content-Type: application/json" \
+    -d '{"email":"owner@example.com"}' 2>/dev/null || echo "000")
+  log "Dev login HTTP status: ${http_code}"
+  log "Dev login response body: $(cat "$body_file" 2>/dev/null || echo '(empty)')"
+  rm -f "$body_file"
   log "FATAL: Cannot proceed without authentication."
   log "Results: $PASS passed, $FAIL failed"
   exit 1
