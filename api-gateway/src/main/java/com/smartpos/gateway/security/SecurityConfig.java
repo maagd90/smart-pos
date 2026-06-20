@@ -49,7 +49,8 @@ public class SecurityConfig {
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/api/v1/auth/**",
-                                "/api/v1/platform/health/**"
+                                "/api/v1/platform/health/**",
+                                "/api/v1/notifications/actions/**"
                         ).permitAll()
                         .pathMatchers("/api/v1/**").authenticated()
                         .anyExchange().permitAll()

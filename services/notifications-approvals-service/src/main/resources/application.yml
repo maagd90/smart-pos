@@ -19,6 +19,25 @@ spring:
     consumer:
       auto-offset-reset: earliest
       group-id: notifications-approvals-service
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:1025}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:false}
+
+notifications:
+  public-base-url: ${PUBLIC_BASE_URL:http://localhost:8080}
+  ttl-days: ${NOTIFICATION_TTL_DAYS:7}
+  identity-url: ${INTEGRATION_IDENTITY_URL:http://identity-access-service:8101}
+  ai-deals-url: ${INTEGRATION_AI_DEALS_URL:http://ai-deals-service:8109}
+  inventory-url: ${INTEGRATION_INVENTORY_URL:http://inventory-service:8105}
+  mail-from: ${NOTIFICATIONS_MAIL_FROM:noreply@smartpos.local}
+
+expo:
+  push-url: ${EXPO_PUSH_URL:https://exp.host/--/api/v2/push/send}
 
 eureka:
   instance:

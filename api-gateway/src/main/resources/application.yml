@@ -81,6 +81,10 @@ spring:
             - Path=/api/v1/stores/*/products/**
 
         # --- Inventory ---
+        - id: inventory-change-requests
+          uri: http://inventory-service:8105
+          predicates:
+            - Path=/api/v1/stores/*/change-requests/**
         - id: inventory
           uri: http://inventory-service:8105
           predicates:
@@ -119,6 +123,11 @@ spring:
             - Path=/api/v1/deals/**
 
         # --- Notifications & Approvals ---
+        - id: notifications-inbox
+          uri: http://notifications-approvals-service:8110
+          order: 50
+          predicates:
+            - Path=/api/v1/notifications/**
         - id: approvals
           uri: http://notifications-approvals-service:8110
           predicates:

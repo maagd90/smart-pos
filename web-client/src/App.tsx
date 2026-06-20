@@ -13,6 +13,7 @@ import { PlatformAiKeysPage } from './pages/platform/PlatformAiKeysPage';
 import { RefundPolicyPage } from './pages/store/RefundPolicyPage';
 import { ReportSettingsPage } from './pages/store/ReportSettingsPage';
 import { StoreSettingsPage } from './pages/store/StoreSettingsPage';
+import { NotificationsPage } from './pages/manager/NotificationsPage';
 import './app.css';
 
 export function App() {
@@ -33,6 +34,7 @@ export function App() {
                 <Route path="store/settings" element={<StoreSettingsPage />} />
                 <Route path="store/refund-policy" element={<RefundPolicyPage />} />
                 <Route path="store/report-settings" element={<ReportSettingsPage />} />
+                <Route path="manager/notifications" element={<NotificationsPage />} />
                 <Route path="dev" element={<DevDashboardPage />} />
               </Route>
             </Route>
