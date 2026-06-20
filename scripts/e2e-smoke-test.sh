@@ -86,16 +86,18 @@ wait_for_stock() {
 api_post() {
   local path="$1"
   local body="$2"
+  local auth_header="Bearer ${TOKEN}"
   curl -sf -X POST "${GATEWAY_URL}${path}" \
     -H "Content-Type: application/json" \
-    -H "Authorization: ******" \
+    -H "Authorization: ${auth_header}" \
     -d "$body" 2>/dev/null
 }
 
 api_get() {
   local path="$1"
+  local auth_header="Bearer ${TOKEN}"
   curl -sf -X GET "${GATEWAY_URL}${path}" \
-    -H "Authorization: ******" 2>/dev/null
+    -H "Authorization: ${auth_header}" 2>/dev/null
 }
 
 log "=== Store Management Platform E2E Business Smoke Test ==="
