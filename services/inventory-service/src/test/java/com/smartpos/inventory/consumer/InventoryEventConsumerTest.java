@@ -1,6 +1,7 @@
 package com.smartpos.inventory.consumer;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -111,5 +112,43 @@ class InventoryEventConsumerTest {
         consumer.handleSaleCreated(payload);
 
         verify(movementRepository, never()).save(any());
+    }
+
+    @Test
+    void duplicateSaleVoidEventIsIdempotent() {
+        String payload = """
+                {"saleId":"%s","storeId":"%s","accountId":"%s","items":[{"productId":"%s","quantity":2}]}
+                """.formatted(saleId, storeId, accountId, productId);
+
+        when(movementRepository.existsByStoreIdAndReferenceTypeAndReferenceIdAndProductId(
+                storeId, "sale_void", saleId, productId))
+                .thenReturn(false)
+                .thenReturn(true);
+        when(movementRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        consumer.handleSaleVoided(payload);
+        consumer.handleSaleVoided(payload);
+
+        verify(movementRepository, times(1)).save(any(InventoryMovement.class));
+    }
+
+    @Test
+    void saleVoidRestoresStockWithPositiveQuantity() {
+        String payload = """
+                {"saleId":"%s","storeId":"%s","accountId":"%s","items":[{"productId":"%s","quantity":3}]}
+                """.formatted(saleId, storeId, accountId, productId);
+
+        when(movementRepository.existsByStoreIdAndReferenceTypeAndReferenceIdAndProductId(
+                storeId, "sale_void", saleId, productId)).thenReturn(false);
+        when(movementRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        consumer.handleSaleVoided(payload);
+
+        org.mockito.ArgumentCaptor<InventoryMovement> captor =
+                org.mockito.ArgumentCaptor.forClass(InventoryMovement.class);
+        verify(movementRepository).save(captor.capture());
+        assertEquals("void", captor.getValue().getMovementType());
+        assertEquals(3, captor.getValue().getQuantity());
+        assertEquals("sale_void", captor.getValue().getReferenceType());
     }
 }

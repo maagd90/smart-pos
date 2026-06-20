@@ -47,6 +47,10 @@ spring:
             - Path=/api/v1/subscriptions/**
 
         # --- Catalog & Pricing ---
+        - id: catalog-refund-policy
+          uri: http://catalog-pricing-service:8104
+          predicates:
+            - Path=/api/v1/stores/*/refund-policy/**
         - id: catalog-pricing
           uri: http://catalog-pricing-service:8104
           predicates:
@@ -69,6 +73,10 @@ spring:
           uri: http://refunds-service:8107
           predicates:
             - Path=/api/v1/stores/*/refunds/**
+        - id: exchanges
+          uri: http://refunds-service:8107
+          predicates:
+            - Path=/api/v1/stores/*/exchanges/**
 
         # --- Customers & Privacy ---
         - id: customers-privacy

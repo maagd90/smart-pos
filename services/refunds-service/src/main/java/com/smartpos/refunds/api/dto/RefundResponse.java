@@ -7,9 +7,6 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Response DTO for a refund.
- */
 public record RefundResponse(UUID id, UUID storeId, UUID saleId, BigDecimal total, String currency,
                              String status, List<RefundItemResponse> items, Instant createdAt) {
 
@@ -21,10 +18,15 @@ public record RefundResponse(UUID id, UUID storeId, UUID saleId, BigDecimal tota
     }
 
     public record RefundItemResponse(UUID productId, String productName, int quantity,
-                                     BigDecimal unitPrice, BigDecimal lineTotal, boolean resellable) {
+                                     BigDecimal unitPrice, BigDecimal lineTotal, boolean resellable,
+                                     BigDecimal baseAmount, BigDecimal prorationPct,
+                                     BigDecimal proratedAmount, BigDecimal restockingFee,
+                                     BigDecimal refundAmount) {
         public static RefundItemResponse from(RefundItem item) {
             return new RefundItemResponse(item.getProductId(), item.getProductName(),
-                    item.getQuantity(), item.getUnitPrice(), item.getLineTotal(), item.isResellable());
+                    item.getQuantity(), item.getUnitPrice(), item.getLineTotal(), item.isResellable(),
+                    item.getBaseAmount(), item.getProrationPct(), item.getProratedAmount(),
+                    item.getRestockingFee(), item.getRefundAmount());
         }
     }
 }

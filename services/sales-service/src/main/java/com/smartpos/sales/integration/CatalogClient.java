@@ -1,18 +1,13 @@
 package com.smartpos.sales.integration;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-/**
- * REST client for fetching product information from the catalog service.
- *
- * <p>Used to obtain the server-side cost price at sale time — the client
- * is never trusted to supply cost data.</p>
- */
 @Component
 public class CatalogClient {
 
@@ -25,28 +20,67 @@ public class CatalogClient {
         this.catalogBaseUrl = catalogBaseUrl;
     }
 
-    /**
-     * Fetches the current cost price for a product from the catalog service.
-     *
-     * @param storeId the store ID
-     * @param productId the product ID
-     * @return the cost price, or null if the product is not found
-     */
     public BigDecimal getCostPrice(UUID storeId, UUID productId) {
-        String url = catalogBaseUrl + "/api/v1/stores/" + storeId + "/products/" + productId;
+        ProductSaleInfo info = getSaleInfo(storeId, productId);
+        return info != null ? info.costPrice() : null;
+    }
+
+    public ProductSaleInfo getSaleInfo(UUID storeId, UUID productId) {
+        String url = catalogBaseUrl + "/api/v1/stores/" + storeId + "/products/" + productId + "/sale-info";
         try {
             @SuppressWarnings("unchecked")
             Map<String, Object> response = restTemplate.getForObject(url, Map.class);
             if (response != null && response.get("data") instanceof Map<?, ?> data) {
-                Object costPrice = data.get("costPrice");
-                if (costPrice != null) {
-                    return new BigDecimal(costPrice.toString());
-                }
+                return ProductSaleInfo.from(data);
             }
         } catch (Exception e) {
-            // Product not found or service unavailable
             return null;
         }
         return null;
+    }
+
+    public record ProductSaleInfo(
+            BigDecimal costPrice,
+            boolean refundable,
+            int refundWindowDays,
+            boolean exchangeable,
+            int exchangeWindowDays,
+            BigDecimal restockingFeePct,
+            BigDecimal restockingFeeFlat,
+            String refundProrationTiersJson) {
+
+        @SuppressWarnings("unchecked")
+        static ProductSaleInfo from(Map<?, ?> data) {
+            Object costPrice = data.get("costPrice");
+            Object refundable = data.get("refundable");
+            Object refundWindowDays = data.get("refundWindowDays");
+            Object exchangeable = data.get("exchangeable");
+            Object exchangeWindowDays = data.get("exchangeWindowDays");
+            Object restockingFeePct = data.get("restockingFeePct");
+            Object restockingFeeFlat = data.get("restockingFeeFlat");
+            Object tiers = data.get("refundProrationTiers");
+            String tiersJson = "[]";
+            if (tiers instanceof List<?> tierList && !tierList.isEmpty()) {
+                StringBuilder sb = new StringBuilder("[");
+                for (int i = 0; i < tierList.size(); i++) {
+                    if (tierList.get(i) instanceof Map<?, ?> tier) {
+                        if (i > 0) sb.append(",");
+                        sb.append("{\"withinDays\":").append(tier.get("withinDays"))
+                                .append(",\"refundPct\":").append(tier.get("refundPct")).append("}");
+                    }
+                }
+                sb.append("]");
+                tiersJson = sb.toString();
+            }
+            return new ProductSaleInfo(
+                    costPrice != null ? new BigDecimal(costPrice.toString()) : BigDecimal.ZERO,
+                    refundable == null || Boolean.parseBoolean(refundable.toString()),
+                    refundWindowDays != null ? Integer.parseInt(refundWindowDays.toString()) : 14,
+                    exchangeable == null || Boolean.parseBoolean(exchangeable.toString()),
+                    exchangeWindowDays != null ? Integer.parseInt(exchangeWindowDays.toString()) : 14,
+                    restockingFeePct != null ? new BigDecimal(restockingFeePct.toString()) : BigDecimal.ZERO,
+                    restockingFeeFlat != null ? new BigDecimal(restockingFeeFlat.toString()) : BigDecimal.ZERO,
+                    tiersJson);
+        }
     }
 }

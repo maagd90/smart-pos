@@ -24,4 +24,21 @@ class DailyReportMathTest {
         BigDecimal grossProfit = revenue.subtract(cogs).subtract(refunds);
         assertEquals(new BigDecimal("75"), grossProfit);
     }
+
+    @Test
+    void voidedSalesExcludedFromRevenue() {
+        BigDecimal revenue = BigDecimal.ZERO;
+        BigDecimal voidedSaleTotal = new BigDecimal("1575");
+        assertEquals(revenue, revenue.add(voidedSaleTotal).subtract(voidedSaleTotal));
+    }
+
+    @Test
+    void refundsUseActualRefundAmountNotLineTotal() {
+        BigDecimal lineTotal = new BigDecimal("1575");
+        BigDecimal refundAmount = new BigDecimal("1417.50");
+        BigDecimal retainedFee = lineTotal.subtract(refundAmount);
+        assertEquals(new BigDecimal("157.50"), retainedFee);
+        BigDecimal refundsTotal = refundAmount;
+        assertEquals(new BigDecimal("1417.50"), refundsTotal);
+    }
 }

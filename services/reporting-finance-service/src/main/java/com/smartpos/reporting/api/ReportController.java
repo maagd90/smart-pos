@@ -84,6 +84,10 @@ public class ReportController {
             if (salesResponse != null && salesResponse.get("data") instanceof List<?> salesList) {
                 for (Object sale : salesList) {
                     if (sale instanceof Map<?, ?> saleMap) {
+                        Object status = saleMap.get("status");
+                        if (status != null && "VOIDED".equals(status.toString())) {
+                            continue;
+                        }
                         Object total = saleMap.get("total");
                         if (total != null) {
                             revenue = revenue.add(new BigDecimal(total.toString()));
@@ -116,9 +120,20 @@ public class ReportController {
             if (refundsResponse != null && refundsResponse.get("data") instanceof List<?> refundsList) {
                 for (Object refund : refundsList) {
                     if (refund instanceof Map<?, ?> refundMap) {
-                        Object total = refundMap.get("total");
-                        if (total != null) {
-                            refundsTotal = refundsTotal.add(new BigDecimal(total.toString()));
+                        if (refundMap.get("items") instanceof List<?> items) {
+                            for (Object itemObj : items) {
+                                if (itemObj instanceof Map<?, ?> itemMap) {
+                                    Object refundAmount = itemMap.get("refundAmount");
+                                    if (refundAmount != null) {
+                                        refundsTotal = refundsTotal.add(new BigDecimal(refundAmount.toString()));
+                                    }
+                                }
+                            }
+                        } else {
+                            Object total = refundMap.get("total");
+                            if (total != null) {
+                                refundsTotal = refundsTotal.add(new BigDecimal(total.toString()));
+                            }
                         }
                     }
                 }

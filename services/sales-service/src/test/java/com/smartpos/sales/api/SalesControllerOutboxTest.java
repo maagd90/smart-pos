@@ -80,7 +80,9 @@ class SalesControllerOutboxTest {
     void persistsSaleAndOutboxEventWhenStockIsAvailable() {
         when(tenantClient.getAccountCurrency(accountId)).thenReturn("AED");
         when(inventoryStockClient.getCurrentStock(storeId, productId)).thenReturn(10);
-        when(catalogClient.getCostPrice(storeId, productId)).thenReturn(new BigDecimal("1500"));
+        when(catalogClient.getSaleInfo(storeId, productId)).thenReturn(
+                new CatalogClient.ProductSaleInfo(new BigDecimal("1500"), true, 14, true, 14,
+                        BigDecimal.ZERO, BigDecimal.ZERO, "[]"));
         when(saleRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         CreateSaleRequest request = new CreateSaleRequest(
@@ -111,6 +113,6 @@ class SalesControllerOutboxTest {
         assertEquals(409, response.getStatusCode().value());
         verify(saleRepository, never()).save(any());
         verify(outboxRepository, never()).save(any());
-        verify(catalogClient, never()).getCostPrice(any(), any());
+        verify(catalogClient, never()).getSaleInfo(any(), any());
     }
 }

@@ -278,7 +278,7 @@ fi
 log ""
 log "--- Step 9: Create Refund (1 resellable unit) ---"
 REFUND_RESPONSE=$(api_post "/api/v1/stores/${STORE_ID}/refunds" \
-  "{\"saleId\":\"${SALE_ID}\",\"items\":[{\"productId\":\"${PRODUCT_ID}\",\"productName\":\"Test Product\",\"quantity\":1,\"unitPrice\":1575,\"resellable\":true}],\"currency\":\"AED\"}")
+  "{\"saleId\":\"${SALE_ID}\",\"items\":[{\"productId\":\"${PRODUCT_ID}\",\"quantity\":1,\"resellable\":true}],\"currency\":\"AED\"}")
 
 if echo "$REFUND_RESPONSE" | grep -q '"success":true'; then
   pass "Create refund"

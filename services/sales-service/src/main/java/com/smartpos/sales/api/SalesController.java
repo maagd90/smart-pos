@@ -120,13 +120,17 @@ public class SalesController {
 
         Sale sale = new Sale(storeId, accountId, currency);
         for (CreateSaleRequest.SaleItemRequest item : request.items()) {
-            BigDecimal costPrice = catalogClient.getCostPrice(storeId, item.productId());
-            if (costPrice == null) {
+            CatalogClient.ProductSaleInfo saleInfo = catalogClient.getSaleInfo(storeId, item.productId());
+            if (saleInfo == null) {
                 return ResponseEntity.badRequest()
                         .body(ApiEnvelope.fail(ApiError.of("PRODUCT_NOT_FOUND",
                                 "Product not found in catalog: " + item.productId())));
             }
-            sale.addItem(item.productId(), item.productName(), item.quantity(), item.unitPrice(), costPrice);
+            sale.addItem(item.productId(), item.productName(), item.quantity(), item.unitPrice(),
+                    saleInfo.costPrice(), saleInfo.refundable(), saleInfo.refundWindowDays(),
+                    saleInfo.exchangeable(), saleInfo.exchangeWindowDays(),
+                    saleInfo.restockingFeePct(), saleInfo.restockingFeeFlat(),
+                    saleInfo.refundProrationTiersJson());
         }
         sale = saleRepository.save(sale);
 
@@ -184,6 +188,42 @@ public class SalesController {
         }
         List<SaleResponse> responses = sales.stream().map(SaleResponse::from).toList();
         return ResponseEntity.ok(ApiEnvelope.ok(responses));
+    }
+
+    @PostMapping("/{saleId}/void")
+    @Transactional
+    @RequirePermission("sale.void")
+    public ResponseEntity<ApiEnvelope<SaleResponse>> voidSale(
+            @PathVariable UUID storeId, @PathVariable UUID saleId) {
+        UUID accountId = requireAccountId();
+        if (accountId == null) {
+            return ResponseEntity.status(401)
+                    .body(ApiEnvelope.fail(ApiError.of("UNAUTHORIZED", "accountId is required in tenant context")));
+        }
+
+        return saleRepository.findByIdAndStoreIdAndAccountId(saleId, storeId, accountId)
+                .map(sale -> {
+                    if (sale.isVoided()) {
+                        return ResponseEntity.ok(ApiEnvelope.ok(SaleResponse.from(sale)));
+                    }
+                    sale.voidSale();
+                    sale = saleRepository.save(sale);
+
+                    List<Map<String, Object>> lineItems = sale.getItems().stream()
+                            .map(i -> Map.<String, Object>of(
+                                    "productId", i.getProductId().toString(),
+                                    "quantity", i.getQuantity()))
+                            .collect(Collectors.toList());
+                    Map<String, Object> payload = Map.of(
+                            "saleId", sale.getId().toString(),
+                            "storeId", storeId.toString(),
+                            "accountId", accountId.toString(),
+                            "items", lineItems);
+                    OutboxEvent event = new OutboxEvent("Sale", sale.getId(), "sale.voided", payload);
+                    outboxRepository.save(event);
+                    return ResponseEntity.ok(ApiEnvelope.ok(SaleResponse.from(sale)));
+                })
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     private UUID requireAccountId() {

@@ -59,25 +59,36 @@ public class Sale {
         this.accountId = accountId;
         this.total = BigDecimal.ZERO;
         this.currency = currency;
-        this.status = "COMPLETED";
+        this.status = "ACTIVE";
         this.createdAt = Instant.now();
     }
 
-    /**
-     * Adds an item to the sale and updates the total.
-     *
-     * @param productId the product sold
-     * @param productName the product name at time of sale
-     * @param quantity the quantity sold
-     * @param unitPrice the unit price at time of sale
-     * @param costPrice the cost price snapshotted at sale time
-     */
-    public void addItem(UUID productId, String productName, int quantity, BigDecimal unitPrice, BigDecimal costPrice) {
+    public void addItem(UUID productId, String productName, int quantity, BigDecimal unitPrice,
+                        BigDecimal costPrice, boolean refundable, int refundWindowDays,
+                        boolean exchangeable, int exchangeWindowDays,
+                        BigDecimal restockingFeePct, BigDecimal restockingFeeFlat,
+                        String refundProrationTiersJson) {
         BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
         BigDecimal lineCost = costPrice.multiply(BigDecimal.valueOf(quantity));
-        SaleItem item = new SaleItem(this, productId, productName, quantity, unitPrice, lineTotal, costPrice, lineCost);
+        SaleItem item = new SaleItem(this, productId, productName, quantity, unitPrice, lineTotal,
+                costPrice, lineCost, refundable, refundWindowDays, exchangeable, exchangeWindowDays,
+                restockingFeePct, restockingFeeFlat, refundProrationTiersJson);
         this.items.add(item);
         this.total = this.total.add(lineTotal);
+    }
+
+    /** @deprecated use {@link #addItem(UUID, String, int, BigDecimal, BigDecimal, boolean, int, boolean, int, BigDecimal, BigDecimal, String)} */
+    public void addItem(UUID productId, String productName, int quantity, BigDecimal unitPrice, BigDecimal costPrice) {
+        addItem(productId, productName, quantity, unitPrice, costPrice,
+                true, 14, true, 14, BigDecimal.ZERO, BigDecimal.ZERO, "[]");
+    }
+
+    public void voidSale() {
+        this.status = "VOIDED";
+    }
+
+    public boolean isVoided() {
+        return "VOIDED".equals(this.status);
     }
 
     public UUID getId() {

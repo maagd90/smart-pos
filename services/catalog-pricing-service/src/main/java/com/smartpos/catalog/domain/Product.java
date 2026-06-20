@@ -56,6 +56,28 @@ public class Product {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "refundable")
+    private Boolean refundable;
+
+    @Column(name = "refund_window_days")
+    private Integer refundWindowDays;
+
+    @Column(name = "exchangeable")
+    private Boolean exchangeable;
+
+    @Column(name = "exchange_window_days")
+    private Integer exchangeWindowDays;
+
+    @Column(name = "restocking_fee_pct")
+    private BigDecimal restockingFeePct;
+
+    @Column(name = "restocking_fee_flat")
+    private BigDecimal restockingFeeFlat;
+
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    @Column(name = "refund_proration_tiers")
+    private String refundProrationTiersJson;
+
     /** Default constructor required by JPA. */
     protected Product() {}
 
@@ -134,4 +156,34 @@ public class Product {
     public BigDecimal getSellingPrice() { return sellingPrice; }
     public String getCurrency() { return currency; }
     public Instant getCreatedAt() { return createdAt; }
+    public Boolean getRefundable() { return refundable; }
+    public Integer getRefundWindowDays() { return refundWindowDays; }
+    public Boolean getExchangeable() { return exchangeable; }
+    public Integer getExchangeWindowDays() { return exchangeWindowDays; }
+    public BigDecimal getRestockingFeePct() { return restockingFeePct; }
+    public BigDecimal getRestockingFeeFlat() { return restockingFeeFlat; }
+    public String getRefundProrationTiersJson() { return refundProrationTiersJson; }
+
+    public void updatePolicy(Boolean refundable, Integer refundWindowDays, Boolean exchangeable,
+                             Integer exchangeWindowDays, BigDecimal restockingFeePct,
+                             BigDecimal restockingFeeFlat, String refundProrationTiersJson) {
+        this.refundable = refundable;
+        this.refundWindowDays = refundWindowDays;
+        this.exchangeable = exchangeable;
+        this.exchangeWindowDays = exchangeWindowDays;
+        this.restockingFeePct = restockingFeePct;
+        this.restockingFeeFlat = restockingFeeFlat;
+        this.refundProrationTiersJson = refundProrationTiersJson;
+    }
+
+    public void updateDetails(String name, String sku, String category, BigDecimal costPrice,
+                              String pricingMode, BigDecimal markupPercent, BigDecimal sellingPrice) {
+        this.name = name;
+        this.sku = sku;
+        this.category = category;
+        this.costPrice = costPrice;
+        this.pricingMode = pricingMode;
+        this.markupPercent = markupPercent;
+        this.sellingPrice = sellingPrice;
+    }
 }
