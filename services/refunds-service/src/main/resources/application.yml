@@ -1,0 +1,41 @@
+server:
+  port: ${SERVER_PORT:8107}
+
+spring:
+  application:
+    name: refunds-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/refunds_db}
+    username: ${SPRING_DATASOURCE_USERNAME:smartpos}
+    password: ${SPRING_DATASOURCE_PASSWORD:smartpos}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: earliest
+      group-id: refunds-service
+
+eureka:
+  instance:
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:false}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:}
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+    registry-fetch-interval-seconds: 5
+    initial-instance-info-replication-interval-seconds: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+integration:
+  inventory-service:
+    url: ${INVENTORY_SERVICE_URL:http://inventory-service:8105}

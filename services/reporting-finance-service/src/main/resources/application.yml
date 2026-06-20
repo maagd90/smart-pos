@@ -1,0 +1,45 @@
+server:
+  port: ${SERVER_PORT:8112}
+
+spring:
+  application:
+    name: reporting-finance-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/reporting_finance_db}
+    username: ${SPRING_DATASOURCE_USERNAME:smartpos}
+    password: ${SPRING_DATASOURCE_PASSWORD:smartpos}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: earliest
+      group-id: reporting-finance-service
+
+eureka:
+  instance:
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:false}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:}
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+    registry-fetch-interval-seconds: 5
+    initial-instance-info-replication-interval-seconds: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+integration:
+  sales-service:
+    url: ${SALES_SERVICE_URL:http://sales-service:8106}
+  refunds-service:
+    url: ${REFUNDS_SERVICE_URL:http://refunds-service:8107}
+  tenant-service:
+    url: ${TENANT_SERVICE_URL:http://tenant-admin-service:8102}

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>com.smartpos</groupId>
+    <artifactId>smartpos-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <relativePath>smartpos-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>store-management-platform</artifactId>
+  <packaging>pom</packaging>
+  <name>Store Management Platform</name>
+  <description>Local development aggregator for all SmartPOS microservices</description>
+
+  <modules>
+    <module>shared-contracts</module>
+    <module>discovery-service</module>
+    <module>api-gateway</module>
+    <module>services/identity-access-service</module>
+    <module>services/tenant-admin-service</module>
+    <module>services/billing-subscription-service</module>
+    <module>services/catalog-pricing-service</module>
+    <module>services/inventory-service</module>
+    <module>services/sales-service</module>
+    <module>services/refunds-service</module>
+    <module>services/customers-privacy-service</module>
+    <module>services/ai-deals-service</module>
+    <module>services/notifications-approvals-service</module>
+    <module>services/messaging-delivery-service</module>
+    <module>services/reporting-finance-service</module>
+  </modules>
+</project>

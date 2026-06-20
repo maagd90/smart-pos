@@ -1,0 +1,82 @@
+platform:
+  architecture: microservices
+  language: Java 17
+  framework: Spring Boot 3.x
+  gateway:
+    name: api-gateway
+    port: 8080
+  discovery:
+    name: discovery-service
+    port: 8761
+    local: Eureka
+    production: Kubernetes DNS
+  broker: Kafka
+  cache: Redis
+  database: PostgreSQL
+  migration: Flyway
+
+shared:
+  name: shared-contracts
+  groupId: com.smartpos
+  artifactId: shared-contracts
+  version: 0.1.0-SNAPSHOT
+
+services:
+  - name: identity-access-service
+    port: 8101
+    database: identity_access_db
+    scope: users roles permissions jwt permission-checks
+  - name: tenant-admin-service
+    port: 8102
+    database: tenant_admin_db
+    scope: accounts stores settings platform-admin
+  - name: billing-subscription-service
+    port: 8103
+    database: billing_subscription_db
+    scope: plans subscriptions entitlements
+  - name: catalog-pricing-service
+    port: 8104
+    database: catalog_pricing_db
+    scope: products cost markup fixed-pricing
+  - name: inventory-service
+    port: 8105
+    database: inventory_db
+    scope: stock-ledger receiving adjustments inventory-change-approval
+  - name: sales-service
+    port: 8106
+    database: sales_db
+    scope: pos-sales cashier-transactions
+  - name: refunds-service
+    port: 8107
+    database: refunds_db
+    scope: refunds returns separation-of-duties
+  - name: customers-privacy-service
+    port: 8108
+    database: customers_privacy_db
+    scope: customer-profiles consent pii-vault encrypted-phone
+  - name: ai-deals-service
+    port: 8109
+    database: ai_deals_db
+    scope: preference-profile deal-generation inactivity-scheduler
+  - name: notifications-approvals-service
+    port: 8110
+    database: notifications_approvals_db
+    scope: approvals inbox accept-reject notifications
+  - name: messaging-delivery-service
+    port: 8111
+    database: messaging_delivery_db
+    scope: whatsapp email provider-stubs phone-decrypt-boundary
+  - name: reporting-finance-service
+    port: 8112
+    database: reporting_finance_db
+    scope: daily-gross-profit expenses month-end-pnl
+
+clients:
+  web:
+    name: web-client
+    stack: React TypeScript Vite
+    port: 3000
+  mobile:
+    name: mobile-client
+    stack: React Native Expo TypeScript
+    port: 19006
