@@ -1,0 +1,42 @@
+server:
+  port: ${SERVER_PORT:8106}
+
+spring:
+  application:
+    name: sales-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/sales_db}
+    username: ${SPRING_DATASOURCE_USERNAME:smartpos}
+    password: ${SPRING_DATASOURCE_PASSWORD:smartpos}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: earliest
+      group-id: sales-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+integration:
+  inventory-service:
+    url: ${INVENTORY_SERVICE_URL:http://inventory-service:8105}
+  catalog-service:
+    url: ${CATALOG_SERVICE_URL:http://catalog-pricing-service:8104}
+
+inventory:
+  # false (default): reject sale before commit with 409 INSUFFICIENT_STOCK.
+  allow-negative-stock: ${ALLOW_NEGATIVE_STOCK:false}

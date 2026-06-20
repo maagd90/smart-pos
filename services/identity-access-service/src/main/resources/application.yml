@@ -1,0 +1,38 @@
+server:
+  port: ${SERVER_PORT:8101}
+
+spring:
+  application:
+    name: identity-access-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/identity_access_db}
+    username: ${SPRING_DATASOURCE_USERNAME:smartpos}
+    password: ${SPRING_DATASOURCE_PASSWORD:smartpos}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:29092}
+    consumer:
+      auto-offset-reset: earliest
+      group-id: identity-access-service
+
+identity:
+  jwt:
+    secret: ${JWT_SECRET:change-me-at-least-32-characters-long}
+    issuer: ${JWT_ISSUER:smart-pos-platform}
+    expiration-seconds: 3600
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
