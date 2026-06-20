@@ -24,7 +24,7 @@ Smart POS is a **store management system** for businesses that operate one or ma
 |------|-------------------------|
 | **Platform admin** | Creates customer accounts, assigns plans, manages AI keys, suspends accounts |
 | **Account owner** | Creates stores, adds users, assigns roles across the organization |
-| **Store manager** | Configures store hours, refund policy, and report delivery for a branch |
+| **Store manager** | Configures store settings, refund policy, and report delivery; receives approval notifications (deal + inventory) via mobile app or web shortcut |
 | **Cashier / staff** | (Future UI) Runs POS and day-to-day store operations — APIs exist today |
 
 ### What you get in this repository
@@ -32,16 +32,18 @@ Smart POS is a **store management system** for businesses that operate one or ma
 | Layer | Description |
 |-------|-------------|
 | **Backend** | 12 Spring Boot microservices + API gateway + service discovery |
-| **Admin web UI** | React app at `web-client/` — login, onboarding, store configuration |
-| **Mobile skeleton** | React Native / Expo app in `mobile-client/` (scaffold) |
+| **Admin web UI** | React app at `web-client/` — login, platform console, account onboarding, store config, PWA approvals inbox |
+| **Mobile app** | React Native / Expo app in `mobile-client/` — store manager login, push notifications, approvals inbox |
+| **Notifications** | `notifications-approvals-service` — Kafka-driven inbox, Expo push, SMTP email with one-click actions |
 | **Infrastructure** | Docker Compose stack: PostgreSQL, Kafka, Redis, Eureka |
-| **Tests & CI** | Unit tests, health smoke tests, end-to-end business flow scripts |
+| **Tests & CI** | Unit tests, health smoke tests, e2e business flow, notifications wiring smoke test |
 
 ### What is not included yet
 
 - Live payment processing, WhatsApp, or LLM integrations (interfaces exist; providers are stubbed)
-- Full POS / inventory screens in the admin UI (nav shows “Coming soon”; APIs work)
-- Offline mobile sync
+- Full POS / inventory operational screens in the admin UI (nav shows “Coming soon”; APIs work)
+- Offline mobile sync or offline approval queue
+- Production SMTP / push credentials (local dev uses MailHog-compatible defaults on port 1025)
 
 ---
 
@@ -171,8 +173,25 @@ The web app sends API calls to the gateway at http://localhost:8080 (via the Vit
 7. **Role Assignment** — assign the `cashier` role to that user **for Branch A only**  
 8. Log in as the cashier — the store picker should show only Branch A  
 9. As owner or store manager → **Store Settings**, **Refund Policy**, **Report Settings**
+10. Assign a user the **store manager** role with `deal.approve` and/or `inventory.change.approve` (see [Step 9](#step-9--store-manager-notifications-mobile-app-or-web-shortcut))
 
 The developer API test dashboard is still available at http://localhost:3000/dev (for engineers testing raw API flows).
+
+### Admin web UI routes
+
+| Route | Who can access | Purpose |
+|-------|----------------|---------|
+| `/login` | Everyone | Sign in |
+| `/platform/accounts` | Platform admin | Create accounts, assign plans |
+| `/platform/ai-keys` | Platform admin | Rotate AI keys |
+| `/account/stores` | Account owner (`stores.manage`) | Create and list stores |
+| `/account/users` | Account owner (`users.manage`) | Invite users |
+| `/account/roles` | Account owner (`users.manage`) | Assign roles per store |
+| `/store/settings` | Store manager | Branch configuration |
+| `/store/refund-policy` | Store manager | Refund rules |
+| `/store/report-settings` | Store manager | Report delivery settings |
+| `/manager/notifications` | Store manager with approval permissions | Pending approvals inbox (PWA-friendly) |
+| `/dev` | Authenticated users | Scripted API smoke dashboard |
 
 ### Step 8 — Stop everything when you are done
 
@@ -192,26 +211,179 @@ This stops containers and removes database volumes so the next run starts fresh.
 
 ### Step 9 — Store manager notifications (mobile app or web shortcut)
 
-Store managers with `deal.approve` or `inventory.change.approve` permissions can receive
-approval notifications in two ways — choose one per device:
+When a **deal proposal** or **inventory change request** needs manager approval, the platform publishes a Kafka event. The notifications service creates one inbox row per eligible recipient and delivers alerts over push, email, and/or the web/mobile inbox. Managers can **Accept** or **Reject** from any channel.
+
+#### Who receives notifications?
+
+Users assigned to the store with these permissions (included on the **store manager** role by default):
+
+| Permission | Triggers notifications for |
+|------------|----------------------------|
+| `deal.approve` | AI deal proposals awaiting approval |
+| `inventory.change.approve` | Inventory adjustment requests |
+
+Assign roles at **Account → Role Assignment** in the admin UI, or via the identity API.
+
+#### Choose one install option per phone
 
 | Option | How to install | How alerts arrive |
-|---|---|---|
-| **Native mobile app** | Install the Expo/React Native app (`mobile-client`) | Expo push notifications over the network |
-| **Web shortcut (PWA)** | Open the admin web UI on your phone → Share → **Add to Home Screen** (iOS) or **Install app** (Chrome/Android) | Browser notifications while the shortcut is installed; polls every 30 seconds when online |
+|--------|----------------|-------------------|
+| **Native mobile app** | Run the Expo app (see below) on iOS/Android | Expo push notifications over the network |
+| **Web shortcut (PWA)** | Open the admin web UI on your phone → Share → **Add to Home Screen** (iOS) or **Install app** (Chrome/Android) | Browser notifications + 30s polling when online |
 
-Both options use the same backend inbox at `/api/v1/notifications` and the same approval
-actions (Accept/Reject). The web shortcut opens at `/manager/notifications` when launched
-from the home screen.
+Both options share the same inbox API (`/api/v1/notifications`) and the same Accept/Reject actions. The PWA shortcut opens at `/manager/notifications`.
 
-**Network required:** Push, email, and web polling all need network connectivity to the API gateway.
+**Email (all managers):** Every new notification also sends an email with secure Accept/Reject links. Email links open a confirmation page in the browser (prefetch-safe — opening the link alone does not approve).
 
-**No duplicate notifications:** Each approval event creates at most one inbox row per recipient
-(enforced by a database unique constraint on kind + reference + user). The service also checks
-for an existing row before insert and skips delivery if a concurrent Kafka replay hits the
-unique constraint — so push, email, and inbox entries are never duplicated for the same event.
-On the web shortcut, browser alerts use the notification `id` as a tag and track seen IDs in
-local storage so the same pending item is not alerted twice.
+**Network required:** Push, email, polling, and inbox actions all need connectivity to the API gateway.
+
+#### Option A — Native mobile app (Expo)
+
+From the project root, in a new terminal:
+
+```bash
+cd mobile-client
+npm ci
+npx expo start
+```
+
+- Scan the QR code with **Expo Go** (development), or build a standalone app for production push.
+- Sign in with a store manager account that has approval permissions.
+- Allow notification permissions when prompted — the app registers an Expo push token with `POST /api/v1/notifications/devices`.
+- Pending items appear in the inbox; tap **Accept** or **Reject**.
+
+Point the app at your gateway (required on a physical device — `localhost` will not work):
+
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://<your-lan-ip>:8080 npx expo start
+```
+
+#### Option B — Web shortcut (PWA)
+
+1. Ensure the web UI is running (`cd web-client && npm run dev`) and reachable from your phone on the same network (use your machine’s LAN IP instead of `localhost` if needed).
+2. Sign in as a store manager with approval permissions.
+3. Open **Approvals** in the sidebar (or go to `/manager/notifications`).
+4. Allow browser notifications when prompted.
+5. Install to home screen:
+   - **iOS Safari:** Share → Add to Home Screen
+   - **Android Chrome:** Menu → Install app / Add to Home screen
+
+The PWA manifest (`web-client/public/manifest.webmanifest`) sets `start_url` to `/manager/notifications` so the shortcut opens directly to the inbox.
+
+#### Verify notification wiring (optional)
+
+With the full Docker stack running:
+
+```bash
+./scripts/notifications-smoke-test.sh
+```
+
+This confirms the gateway routes public email action links and returns prefetch-safe HTML for invalid tokens.
+
+#### No duplicate notifications
+
+Each approval event creates **at most one inbox row per recipient**:
+
+1. **Database** — unique constraint on `(kind, ref_type, ref_id, recipient_user_id)`
+2. **Service** — skips insert when a row already exists; catches concurrent Kafka replays via `DataIntegrityViolationException` (no second push or email)
+3. **Web PWA** — browser `Notification` tag = notification id; seen IDs stored in `localStorage`
+4. **Decisions** — Accept/Reject is idempotent; repeating the same decision returns “already decided”
+
+---
+
+## Store manager notifications — technical reference
+
+This section documents the backend and API surface added in the notifications milestone.
+
+### Event flow
+
+```
+ai-deals-service          inventory-service
+       │                          │
+       │  deal.pending_approval     │  inventory.change.requested
+       └──────────┬─────────────────┘
+                  ▼
+         Kafka (domain events)
+                  ▼
+    notifications-approvals-service
+         │         │         │
+         ▼         ▼         ▼
+    Expo push   SMTP     Inbox API
+    (mobile)   (email)  (web + mobile)
+                  │
+                  ▼
+         Accept / Reject
+                  │
+       ┌──────────┴──────────┐
+       ▼                     ▼
+ ai-deals-service    inventory-service
+ (accept/reject deal) (approve/reject change)
+```
+
+### Notification kinds
+
+| Kind | Kafka event | Owning service action |
+|------|-------------|------------------------|
+| `DEAL_APPROVAL` | `deal.pending_approval` | `POST /api/v1/stores/{storeId}/deals/{id}/accept` or `/reject` |
+| `INVENTORY_CHANGE_APPROVAL` | `inventory.change.requested` | `POST /api/v1/stores/{storeId}/change-requests/{id}/approve` or `/reject` |
+
+### Notifications API (authenticated)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/notifications?status=PENDING` | List inbox for current user |
+| `GET` | `/api/v1/notifications/{id}` | Notification detail |
+| `POST` | `/api/v1/notifications/{id}/decide` | Body: `{ "decision": "ACCEPT" \| "REJECT", "via": "MOBILE" \| "WEB" }` |
+| `POST` | `/api/v1/notifications/devices` | Register Expo push token |
+| `DELETE` | `/api/v1/notifications/devices/{expoPushToken}` | Unregister device |
+
+### Email action links (public, no JWT)
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/notifications/actions/{token}` | HTML confirmation page (prefetch-safe — no mutation) |
+| `POST` | `/api/v1/notifications/actions/{token}/confirm` | Execute Accept/Reject from email |
+
+These routes are allowlisted in the gateway security config (no bearer token required).
+
+### Related owning-service APIs
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/v1/stores/{storeId}/deals` | Create pending deal (requires `deal.create`) |
+| `POST` | `/api/v1/stores/{storeId}/deals/{id}/accept` | Approve deal |
+| `POST` | `/api/v1/stores/{storeId}/deals/{id}/reject` | Reject deal |
+| `POST` | `/api/v1/stores/{storeId}/change-requests` | Submit inventory change request |
+| `POST` | `/api/v1/stores/{storeId}/change-requests/{id}/approve` | Approve change |
+| `POST` | `/api/v1/stores/{storeId}/change-requests/{id}/reject` | Reject change |
+
+### Configuration (notifications-approvals-service)
+
+Set in Docker Compose / `.env` (defaults work for local dev with MailHog on port 1025):
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `PUBLIC_BASE_URL` | `http://localhost:8080` | Base URL in email action links |
+| `NOTIFICATION_TTL_DAYS` | `7` | Days until pending notifications expire |
+| `NOTIFICATIONS_MAIL_FROM` | `noreply@smartpos.local` | From address for approval emails |
+| `SMTP_HOST` | `localhost` | SMTP server |
+| `SMTP_PORT` | `1025` | SMTP port (MailHog/Mailpit compatible) |
+| `SMTP_AUTH` | `false` | Enable SMTP authentication |
+| `EXPO_PUSH_URL` | `https://exp.host/--/api/v2/push/send` | Expo push API endpoint |
+| `KAFKA_BOOTSTRAP_SERVERS` | `localhost:29092` | Kafka broker |
+
+### Key source locations
+
+| Area | Path |
+|------|------|
+| Notifications service | `services/notifications-approvals-service/` |
+| Kafka consumers | `consumer/DealPendingApprovalConsumer.java`, `consumer/InventoryChangeRequestedConsumer.java` |
+| Push + email delivery | `service/ExpoPushDeliveryService.java`, `service/EmailDeliveryService.java` |
+| Dedup logic | `service/NotificationService.java`, migration `V2__notifications.sql` |
+| Mobile inbox | `mobile-client/src/features/notifications/` |
+| Web PWA + inbox | `web-client/public/manifest.webmanifest`, `web-client/src/pages/manager/NotificationsPage.tsx` |
+| Approval permissions | `services/identity-access-service/.../V8__approval_permissions.sql` |
+| Smoke test | `scripts/notifications-smoke-test.sh` |
 
 ---
 
@@ -222,7 +394,9 @@ cp .env.example .env
 ./scripts/compose-up-ci.sh
 ./scripts/smoke-test.sh
 ./scripts/e2e-smoke-test.sh
+./scripts/notifications-smoke-test.sh
 cd web-client && npm ci && npm run dev
+cd mobile-client && npm ci && npx expo start
 ```
 
 Build and test without Docker:
@@ -246,6 +420,11 @@ cd mobile-client && npm ci && npx tsc --noEmit
 | E2E fails on stock count | Kafka is async — re-run the test; it retries for up to 5 minutes |
 | Admin login fails | Confirm `.env` has `BOOTSTRAP_ADMIN_*` set and identity service logs show “Bootstrap platform admin created” |
 | `npm run dev` cannot reach API | Ensure gateway is up at http://localhost:8080 before starting the web client |
+| Mobile app cannot log in | Set `EXPO_PUBLIC_API_BASE_URL` to your LAN IP gateway URL (not `localhost`) on a physical device |
+| No push on mobile | Allow notification permission; confirm device registered via `POST /api/v1/notifications/devices` |
+| No browser alerts (PWA) | Allow notifications in browser settings; keep `/manager/notifications` open or installed as shortcut |
+| Approval emails not arriving | Check SMTP settings; local stack expects MailHog/Mailpit on port 1025 |
+| Duplicate notification concerns | See [No duplicate notifications](#no-duplicate-notifications) — DB constraint + service skip + client dedup |
 
 Diagnostic commands:
 
@@ -283,7 +462,9 @@ More detail: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**
 ```
 
 - **Synchronous:** REST through the gateway (or service-to-service via Eureka)  
-- **Asynchronous:** Kafka domain events (e.g. inventory updates after sales/refunds)
+- **Asynchronous:** Kafka domain events (inventory updates, deal approvals, inventory change requests, outbox pattern)
+
+**Notifications path:** owning services publish approval events → `notifications-approvals-service` consumes Kafka → creates deduplicated inbox rows → delivers Expo push + email + serves inbox/decide APIs → on decision, calls back to ai-deals or inventory service.
 
 **Security rule:** only the **API gateway** is exposed on host ports by default. Individual microservices run inside Docker and are not directly reachable unless you use `docker-compose.debug.yml`.
 
@@ -341,11 +522,20 @@ Example: http://localhost:8080/api/v1/platform/health/inventory
 | `/api/v1/platform/**` | Platform admin & billing |
 | `/api/v1/stores/*/products/**` | Catalog |
 | `/api/v1/stores/*/inventory/**` | Inventory |
+| `/api/v1/stores/*/change-requests/**` | Inventory change requests |
 | `/api/v1/stores/*/sales/**` | Sales |
 | `/api/v1/stores/*/refunds/**` | Refunds |
-| `/api/v1/notifications/**` | Notifications & approvals |
+| `/api/v1/stores/*/exchanges/**` | Refunds (exchanges) |
+| `/api/v1/stores/*/deals/**` | AI deals |
+| `/api/v1/deals/**` | AI deals |
+| `/api/v1/notifications/**` | Notifications & approvals (inbox, devices, email actions) |
 | `/api/v1/stores/*/approvals/**` | Notifications & approvals |
+| `/api/v1/stores/*/notifications/**` | Notifications & approvals |
+| `/api/v1/stores/*/messages/**` | Messaging (stub) |
 | `/api/v1/stores/*/reports/**` | Reporting |
+| `/api/v1/stores/*/report-settings/**` | Report settings |
+| `/api/v1/stores/*/expenses/**` | Reporting (expenses) |
+| `/api/v1/platform/health/**` | Per-service health probes |
 
 ---
 
@@ -365,12 +555,14 @@ New accounts receive a **starter** plan (1 store) by default. Creating more stor
 
 GitHub Actions runs on every push and pull request:
 
-1. `mvn test` — Java unit tests  
-2. `web-client` — `npm ci && npm run build`  
-3. `mobile-client` — TypeScript check  
+1. `mvn test` — Java unit tests (includes notifications dedup tests)  
+2. `web-client` — `npm ci && npm run build` (includes PWA manifest + approvals page)  
+3. `mobile-client` — TypeScript check (notifications inbox + push registration)  
 4. `docker compose config` — validate Compose file  
 5. Smoke test — all health routes  
 6. E2E test — full business flow  
+
+Run `./scripts/notifications-smoke-test.sh` locally after `./scripts/compose-up-ci.sh` to verify notification action route wiring.
 
 Local escape hatch (not used in CI): `SMOKE_TEST_MODE=mock` skips live checks in smoke scripts.
 
