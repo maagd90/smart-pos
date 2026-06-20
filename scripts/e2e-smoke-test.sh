@@ -21,6 +21,25 @@ log() { echo "[e2e-smoke] $*"; }
 pass() { log "PASS: $1"; PASS=$((PASS + 1)); }
 fail() { log "FAIL: $1"; FAIL=$((FAIL + 1)); }
 
+log_http_diagnostics() {
+  local url="$1"
+  local label="$2"
+  local body_file http_code body
+
+  body_file=$(mktemp)
+  http_code=$(curl -sS -o "$body_file" -w "%{http_code}" \
+    -H "Authorization: Bearer ${TOKEN}" "$url" 2>/dev/null || echo "000")
+  body=$(cat "$body_file" 2>/dev/null || true)
+  rm -f "$body_file"
+
+  log "${label} HTTP status: ${http_code}"
+  if [ -n "$body" ]; then
+    log "${label} response body: ${body}"
+  else
+    log "${label} response body: (empty)"
+  fi
+}
+
 wait_for_url() {
   local url="$1"
   local label="$2"
@@ -34,6 +53,33 @@ wait_for_url() {
     retries=$((retries + 1))
     sleep "$RETRY_INTERVAL"
   done
+  return 1
+}
+
+wait_for_stock() {
+  local expected="$1"
+  local label="$2"
+  local path="/api/v1/stores/${STORE_ID}/inventory/stock/${PRODUCT_ID}"
+  local retries=0
+  local stock_response current_stock
+
+  log "Waiting for stock to reach ${expected} (${label})..."
+  while [ $retries -lt $MAX_RETRIES ]; do
+    stock_response=$(api_get "$path" || true)
+    current_stock=$(echo "$stock_response" | grep -o '"currentStock":[0-9]*' | cut -d':' -f2)
+
+    if [ "$current_stock" = "$expected" ]; then
+      return 0
+    fi
+
+    retries=$((retries + 1))
+    sleep "$RETRY_INTERVAL"
+  done
+
+  stock_response=$(api_get "$path" || true)
+  current_stock=$(echo "$stock_response" | grep -o '"currentStock":[0-9]*' | cut -d':' -f2)
+  log "Timed out waiting for stock ${expected}; last value was ${current_stock:-unknown}"
+  log_http_diagnostics "${GATEWAY_URL}${path}" "$label"
   return 1
 }
 
@@ -178,17 +224,13 @@ else
   fail "Create sale - response: $SALE_RESPONSE"
 fi
 
-# Step 8: Assert stock is 8
+# Step 8: Assert stock is 8 (async inventory update via Kafka)
 log ""
 log "--- Step 8: Check Stock after sale (expect 8) ---"
-sleep 1
-STOCK_RESPONSE=$(api_get "/api/v1/stores/${STORE_ID}/inventory/stock/${PRODUCT_ID}")
-CURRENT_STOCK=$(echo "$STOCK_RESPONSE" | grep -o '"currentStock":[0-9]*' | cut -d':' -f2)
-
-if [ "$CURRENT_STOCK" = "8" ]; then
+if wait_for_stock 8 "Stock after sale"; then
   pass "Stock is 8 after sale"
 else
-  fail "Stock is $CURRENT_STOCK (expected 8)"
+  fail "Stock did not reach 8 after sale"
 fi
 
 # Step 9: Create refund for 1 resellable unit
@@ -203,17 +245,13 @@ else
   fail "Create refund - response: $REFUND_RESPONSE"
 fi
 
-# Step 10: Assert stock is 9
+# Step 10: Assert stock is 9 (async inventory update via Kafka)
 log ""
 log "--- Step 10: Check Stock after refund (expect 9) ---"
-sleep 1
-STOCK_RESPONSE=$(api_get "/api/v1/stores/${STORE_ID}/inventory/stock/${PRODUCT_ID}")
-CURRENT_STOCK=$(echo "$STOCK_RESPONSE" | grep -o '"currentStock":[0-9]*' | cut -d':' -f2)
-
-if [ "$CURRENT_STOCK" = "9" ]; then
+if wait_for_stock 9 "Stock after refund"; then
   pass "Stock is 9 after refund"
 else
-  fail "Stock is $CURRENT_STOCK (expected 9)"
+  fail "Stock did not reach 9 after refund"
 fi
 
 # Step 11: Daily Report

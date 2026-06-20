@@ -78,6 +78,8 @@ jobs:
         run: cp .env.example .env
       - name: Build and start services
         run: ./scripts/compose-up-ci.sh
+      - name: Wait for platform readiness
+        run: ./scripts/wait-for-platform.sh
       - name: Run smoke tests
         run: ./scripts/smoke-test.sh
       - name: Run e2e business smoke tests

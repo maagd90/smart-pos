@@ -94,11 +94,42 @@ log "Starting discovery service..."
 ${COMPOSE} up -d discovery-service
 sleep 20
 
+check_exited_containers() {
+  local failed=0
+  while read -r cid; do
+    [ -n "$cid" ] || continue
+    name=$(docker inspect -f '{{.Name}}' "$cid" 2>/dev/null | sed 's|^/||')
+    status=$(docker inspect -f '{{.State.Status}}' "$cid" 2>/dev/null)
+    exit_code=$(docker inspect -f '{{.State.ExitCode}}' "$cid" 2>/dev/null)
+    if [ "$status" = "exited" ] && [ "$exit_code" != "0" ]; then
+      log "Container ${name} exited with code ${exit_code}"
+      failed=1
+    fi
+  done < <(${COMPOSE} ps -aq 2>/dev/null || true)
+
+  if [ "$failed" -ne 0 ]; then
+    dump_failed_services
+    return 1
+  fi
+  return 0
+}
+
 log "Starting remaining platform services..."
 if ! ${COMPOSE} up -d; then
   dump_failed_services
-  log "Some services failed to start; smoke tests will diagnose remaining issues"
+  exit 1
+fi
+
+if ! check_exited_containers; then
+  log "One or more containers exited after startup"
+  exit 1
 fi
 
 log "Compose startup finished"
 ${COMPOSE} ps -a
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if ! "${SCRIPT_DIR}/wait-for-platform.sh"; then
+  dump_failed_services
+  exit 1
+fi

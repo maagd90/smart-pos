@@ -4,6 +4,11 @@
 # Domain services are NOT exposed on host ports by default.
 # Use docker-compose.debug.yml for direct service access during development.
 
+x-eureka-env: &eureka-env
+  EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+  EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "5"
+  EUREKA_CLIENT_INITIAL_INSTANCE_INFO_REPLICATION_INTERVAL_SECONDS: "5"
+
 services:
 
   # --- Infrastructure ---
@@ -219,10 +224,12 @@ services:
       dockerfile: api-gateway/Dockerfile
     depends_on:
       discovery-service:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: api-gateway
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -253,6 +260,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: identity-access-service
       SERVER_PORT: 8101
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       SPRING_DATASOURCE_URL: jdbc:postgresql://identity-access-db:5432/identity_access_db
@@ -279,6 +288,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: tenant-admin-service
       SERVER_PORT: 8102
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-local}
       SPRING_DATASOURCE_URL: jdbc:postgresql://tenant-admin-db:5432/tenant_admin_db
@@ -303,6 +314,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: billing-subscription-service
       SERVER_PORT: 8103
       SPRING_DATASOURCE_URL: jdbc:postgresql://billing-subscription-db:5432/billing_subscription_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -326,6 +339,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: catalog-pricing-service
       SERVER_PORT: 8104
       SPRING_DATASOURCE_URL: jdbc:postgresql://catalog-pricing-db:5432/catalog_pricing_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -349,6 +364,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: inventory-service
       SERVER_PORT: 8105
       SPRING_DATASOURCE_URL: jdbc:postgresql://inventory-db:5432/inventory_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -372,6 +389,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: sales-service
       SERVER_PORT: 8106
       SPRING_DATASOURCE_URL: jdbc:postgresql://sales-db:5432/sales_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -395,6 +414,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: refunds-service
       SERVER_PORT: 8107
       SPRING_DATASOURCE_URL: jdbc:postgresql://refunds-db:5432/refunds_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -418,6 +439,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: customers-privacy-service
       SERVER_PORT: 8108
       SPRING_DATASOURCE_URL: jdbc:postgresql://customers-privacy-db:5432/customers_privacy_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -441,6 +464,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: ai-deals-service
       SERVER_PORT: 8109
       SPRING_DATASOURCE_URL: jdbc:postgresql://ai-deals-db:5432/ai_deals_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -464,6 +489,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: notifications-approvals-service
       SERVER_PORT: 8110
       SPRING_DATASOURCE_URL: jdbc:postgresql://notifications-approvals-db:5432/notifications_approvals_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -487,6 +514,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: messaging-delivery-service
       SERVER_PORT: 8111
       SPRING_DATASOURCE_URL: jdbc:postgresql://messaging-delivery-db:5432/messaging_delivery_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
@@ -510,6 +539,8 @@ services:
       kafka:
         condition: service_healthy
     environment:
+      <<: *eureka-env
+      EUREKA_INSTANCE_HOSTNAME: reporting-finance-service
       SERVER_PORT: 8112
       SPRING_DATASOURCE_URL: jdbc:postgresql://reporting-finance-db:5432/reporting_finance_db
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}

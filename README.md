@@ -3,33 +3,36 @@
 Multi-tenant, web + mobile store management SaaS built as independently deployable
 Java 17 + Spring Boot 3.x microservices.
 
-## Current Milestone: 1 — Platform Scaffold
+**New here?** Start with the step-by-step guide: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**
 
-This branch delivers the platform infrastructure and runnable service skeletons.
-No business logic is implemented yet — services expose health endpoints only.
+## Current Milestone: Platform + Core Business Flows
+
+This branch delivers a runnable microservices platform with health checks, dev authentication,
+and end-to-end business flows verified by smoke and e2e tests.
 
 ### What is included
 
 - Spring Cloud Gateway as the single public API entry point
 - JWT validation, Redis rate limiting, and subscription gate foundations
-- Eureka service discovery for local development
-- Kafka as the async event broker
+- Eureka service discovery with Docker-friendly instance registration
+- Kafka as the async event broker (inventory updates, outbox pattern)
 - Redis for cache, rate limiting, and session infrastructure
 - PostgreSQL with one database per bounded-context service
 - Flyway baseline migration per service
 - Shared contracts library (API envelope, auth principal, domain events, tenant context)
 - Request context filter propagating gateway-forwarded identity headers
-- 12 runnable domain service skeletons
+- 12 runnable domain services with core business APIs
+- Dev-login for local and CI testing
 - React + TypeScript web client skeleton
 - React Native + Expo mobile client skeleton
-- Docker Compose orchestration with health checks
-- GitHub Actions CI pipeline
-- Smoke test proving all services start and respond through the gateway
+- Docker Compose orchestration with staged CI startup
+- GitHub Actions CI pipeline (build, compose validation, smoke, e2e)
+- Smoke test proving all services respond through the gateway
+- E2E business smoke test (account → store → product → inventory → sale → refund → report)
 
 ### What is NOT included (subsequent milestones)
 
-- Real business logic in any domain service
-- Real JWT issuance (Identity service — Milestone 2)
+- Real JWT issuance for production auth flows (beyond dev-login)
 - Real subscription enforcement (Billing service — Milestone 7)
 - Real payment, WhatsApp, or LLM integrations (stubbed behind interfaces)
 - Offline mobile sync
@@ -42,35 +45,39 @@ No business logic is implemented yet — services expose health endpoints only.
 - Maven 3.9+
 - Node.js 20+
 - Docker and Docker Compose v2
+- ~16 GB RAM recommended for full stack
 
-## Local Setup
+See **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** for a full setup walkthrough.
+
+## Quick Start
 
 ```bash
 # 1. Copy environment configuration
 cp .env.example .env
 
-# 2. Build all Java modules
-mvn -q -DskipTests package
+# 2. Start platform (staged startup + readiness wait)
+./scripts/compose-up-ci.sh
 
-# 3. Build web client
-cd web-client && npm ci && npm run build && cd ..
-
-# 4. Type-check mobile client
-cd mobile-client && npm ci && npx tsc --noEmit && cd ..
-
-# 5. Validate Docker Compose
-docker compose config
-
-# 6. Start everything
-docker compose up --build -d
-
-# 7. Run smoke tests
+# 3. Run health smoke test
 ./scripts/smoke-test.sh
 
-# 8. Stop and clean
+# 4. Run end-to-end business smoke test
+./scripts/e2e-smoke-test.sh
+
+# 5. Stop and clean
 docker compose down -v
 # or
 ./scripts/local-clean.sh
+```
+
+Alternative startup:
+
+```bash
+cp .env.example .env
+docker compose up --build -d
+./scripts/wait-for-platform.sh
+./scripts/smoke-test.sh
+./scripts/e2e-smoke-test.sh
 ```
 
 ## Architecture
@@ -131,7 +138,8 @@ docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build -d
 | `/api/v1/stores/*/messages/**` | messaging-delivery-service |
 | `/api/v1/stores/*/reports/**` | reporting-finance-service |
 | `/api/v1/stores/*/expenses/**` | reporting-finance-service |
-| `/api/v1/platform/**` | tenant-admin-service (admin) |
+| `/api/v1/platform/health/**` | Per-service health routes (see below) |
+| `/api/v1/platform/**` (other) | tenant-admin-service (admin) |
 
 ## Health Check Endpoints
 
@@ -164,12 +172,14 @@ Infrastructure health:
 
 ## Rate Limiting
 
-Redis-backed rate limiting is configured at the gateway:
+Redis-backed rate limiting is configured at the gateway for business routes.
+Health routes (`/api/v1/platform/health/**`) are excluded from the global rate limiter
+so smoke tests can probe all services quickly.
 
 | Route | Replenish Rate | Burst Capacity |
 |---|---|---|
 | `/api/v1/auth/**` | 10 req/sec | 20 |
-| All other `/api/v1/**` | 50 req/sec | 100 |
+| Other business `/api/v1/**` | 50 req/sec | 100 |
 
 Key resolution: authenticated user ID when available, remote IP address otherwise.
 All values are configurable via environment variables.
@@ -199,11 +209,12 @@ All can be swapped and disabled via configuration/entitlements.
 
 The GitHub Actions CI runs on every pull request and push:
 
-1. **Java Build** — `mvn -q -DskipTests package`
+1. **Java Build** — `mvn -q test`
 2. **Web Client Build** — `npm ci && npm run build`
 3. **Mobile Client Type Check** — `npm ci && npx tsc --noEmit`
 4. **Docker Compose Validation** — `docker compose config`
-5. **Smoke Test** — full Docker Compose startup + health verification
+5. **Smoke Test** — staged Docker Compose startup, platform readiness wait, health verification
+6. **E2E Business Smoke Test** — full business flow through the gateway
 
 ## Service Catalog
 

@@ -21,9 +21,14 @@ spring:
       group-id: customers-privacy-service
 
 eureka:
+  instance:
+    prefer-ip-address: ${EUREKA_INSTANCE_PREFER_IP_ADDRESS:false}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:}
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+    registry-fetch-interval-seconds: 5
+    initial-instance-info-replication-interval-seconds: 5
 
 management:
   endpoints:
