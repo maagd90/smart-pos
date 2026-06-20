@@ -32,6 +32,24 @@ log() { echo "[smoke-test] $*"; }
 pass() { log "PASS: $1"; PASS=$((PASS + 1)); }
 fail() { log "FAIL: $1"; FAIL=$((FAIL + 1)); }
 
+log_http_diagnostics() {
+  local url="$1"
+  local label="$2"
+  local body_file http_code body
+
+  body_file=$(mktemp)
+  http_code=$(curl -sS -o "$body_file" -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+  body=$(cat "$body_file" 2>/dev/null || true)
+  rm -f "$body_file"
+
+  log "${label} HTTP status: ${http_code}"
+  if [ -n "$body" ]; then
+    log "${label} response body: ${body}"
+  else
+    log "${label} response body: (empty)"
+  fi
+}
+
 wait_for_url() {
   local url="$1"
   local label="$2"
@@ -45,14 +63,25 @@ wait_for_url() {
     retries=$((retries + 1))
     sleep "$RETRY_INTERVAL"
   done
+  log_http_diagnostics "$url" "$label"
   return 1
 }
 
 check_health() {
   local url="$1"
   local label="$2"
-  local response
-  response=$(curl -sf "$url" 2>/dev/null) || { fail "$label - no response"; return; }
+  local body_file http_code response
+
+  body_file=$(mktemp)
+  http_code=$(curl -sS -o "$body_file" -w "%{http_code}" "$url" 2>/dev/null || echo "000")
+  response=$(cat "$body_file" 2>/dev/null || true)
+  rm -f "$body_file"
+
+  if [ "$http_code" != "200" ]; then
+    fail "$label - HTTP $http_code"
+    log "${label} response body: ${response:-"(empty)"}"
+    return
+  fi
 
   if echo "$response" | grep -qi '"status".*"UP"'; then
     pass "$label"
