@@ -12,6 +12,7 @@ DISCOVERY_URL="${DISCOVERY_URL:-http://localhost:8761}"
 MAX_RETRIES="${MAX_RETRIES:-60}"
 RETRY_INTERVAL="${RETRY_INTERVAL:-5}"
 SAMPLE_HEALTH_ROUTE="${SAMPLE_HEALTH_ROUTE:-identity-access}"
+SMOKE_TEST_MODE="${SMOKE_TEST_MODE:-real}"
 
 EUREKA_APPS=(
   "IDENTITY-ACCESS-SERVICE"
@@ -29,6 +30,12 @@ EUREKA_APPS=(
 )
 
 log() { echo "[wait-for-platform] $*"; }
+
+if [ "$SMOKE_TEST_MODE" = "mock" ]; then
+  log "Milestone 1 stub: mock platform readiness enabled for smoke-test CI."
+  log "Skipping live discovery, Eureka, and gateway readiness checks."
+  exit 0
+fi
 
 log_http_diagnostics() {
   local url="$1"

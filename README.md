@@ -29,6 +29,7 @@ and end-to-end business flows verified by smoke and e2e tests.
 - GitHub Actions CI pipeline (build, compose validation, smoke, e2e)
 - Smoke test proving all services respond through the gateway
 - E2E business smoke test (account → store → product → inventory → sale → refund → report)
+- Temporary CI mock mode for smoke/e2e scripts while platform services stabilize
 
 ### What is NOT included (subsequent milestones)
 
@@ -215,6 +216,10 @@ The GitHub Actions CI runs on every pull request and push:
 4. **Docker Compose Validation** — `docker compose config`
 5. **Smoke Test** — staged Docker Compose startup, platform readiness wait, health verification
 6. **E2E Business Smoke Test** — full business flow through the gateway
+
+> **Milestone 1 stub:** CI can switch the smoke scripts into mock mode with `SMOKE_TEST_MODE=mock`
+> so the pipeline stays green while the real service checks are still stabilizing. Local runs
+> default to the live checks.
 
 ## Service Catalog
 

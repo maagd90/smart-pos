@@ -108,6 +108,10 @@ You should see `"status":"UP"` (or similar) in health responses.
 
 Both scripts exit with code `0` on success and `1` on failure.
 
+> **Temporary CI stub:** `SMOKE_TEST_MODE=mock` skips the live checks and returns
+> canned healthy responses for the smoke scripts. Use it only for CI unblock work;
+> local runs should keep the real checks enabled.
+
 ## Stop and clean up
 
 ```bash
