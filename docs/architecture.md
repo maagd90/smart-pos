@@ -14,6 +14,28 @@ with its own:
 
 Services are organized by business capability, not by technical layer.
 
+## Independent Project Builds
+
+Each service is an independently buildable Maven project:
+
+- **Parent BOM:** `smartpos-parent/pom.xml` (dependency versions only, no modules)
+- **Shared library:** `shared-contracts` (installed to local/remote Maven repo)
+- **Service module:** e.g. `services/inventory-service/pom.xml` (standalone Spring Boot app)
+
+Build a single service without the full monorepo:
+
+```bash
+mvn -f shared-contracts/pom.xml install -DskipTests
+mvn -f services/inventory-service/pom.xml test package
+```
+
+Docker builds copy only `smartpos-parent`, `shared-contracts`, and the target service —
+not the entire aggregator `pom.xml`. This prevents unrelated service changes from breaking
+another service's container image build.
+
+The root `pom.xml` remains a **local development aggregator** for running `mvn test` across
+all modules in one command.
+
 ## Database Ownership
 
 Every service owns its database exclusively. No other service may read from or write

@@ -1,15 +1,17 @@
-# Multi-stage build for domain services in the Maven multi-module project.
-# Build context must be the repository root so shared-contracts is accessible.
+# Independent per-service Docker build.
+# Each service builds from its own pom.xml plus shared-contracts — no full monorepo required.
 ARG SERVICE_MODULE
 
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /workspace
-COPY pom.xml .
-COPY shared-contracts ./shared-contracts
+COPY smartpos-parent/pom.xml ./smartpos-parent/pom.xml
+COPY shared-contracts/pom.xml ./shared-contracts/pom.xml
+COPY shared-contracts/src ./shared-contracts/src
 ARG SERVICE_MODULE
 COPY ${SERVICE_MODULE}/pom.xml ./${SERVICE_MODULE}/pom.xml
 COPY ${SERVICE_MODULE}/src ./${SERVICE_MODULE}/src
-RUN mvn -q -DskipTests -pl shared-contracts,${SERVICE_MODULE} -am package
+RUN mvn -q -f shared-contracts/pom.xml install -DskipTests
+RUN mvn -q -f ${SERVICE_MODULE}/pom.xml package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app

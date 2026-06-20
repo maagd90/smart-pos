@@ -8,6 +8,9 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.UUID;
 
+/**
+ * Calls the identity service to bootstrap RBAC roles for a new account.
+ */
 @Component
 public class IdentityRoleProvisioningClient {
 
@@ -16,12 +19,24 @@ public class IdentityRoleProvisioningClient {
     private final RestTemplate restTemplate;
     private final String identityBaseUrl;
 
+    /**
+     * Creates the identity provisioning client.
+     *
+     * @param restTemplate HTTP client with tenant header propagation
+     * @param identityBaseUrl identity service base URL
+     */
     public IdentityRoleProvisioningClient(RestTemplate restTemplate,
                                           @Value("${integration.identity-service.url:http://identity-access-service:8101}") String identityBaseUrl) {
         this.restTemplate = restTemplate;
         this.identityBaseUrl = identityBaseUrl;
     }
 
+    /**
+     * Requests role template copy for a newly created account.
+     *
+     * @param accountId account to provision
+     * @throws IllegalStateException when provisioning fails
+     */
     public void provisionRolesForAccount(UUID accountId) {
         try {
             restTemplate.postForObject(

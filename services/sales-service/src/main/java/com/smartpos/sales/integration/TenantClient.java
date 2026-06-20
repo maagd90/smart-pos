@@ -15,6 +15,12 @@ public class TenantClient {
     private final RestTemplate restTemplate;
     private final String tenantBaseUrl;
 
+    /**
+     * Creates the tenant client.
+     *
+     * @param restTemplate HTTP client with tenant header propagation
+     * @param tenantBaseUrl tenant-admin service base URL
+     */
     public TenantClient(RestTemplate restTemplate,
                         @Value("${integration.tenant-service.url:http://tenant-admin-service:8102}") String tenantBaseUrl) {
         this.restTemplate = restTemplate;
@@ -22,7 +28,10 @@ public class TenantClient {
     }
 
     /**
-     * Resolves the account currency, or null if unavailable.
+     * Resolves the account currency from tenant-admin.
+     *
+     * @param accountId account identifier
+     * @return currency code or null when unavailable
      */
     public String getAccountCurrency(UUID accountId) {
         String url = tenantBaseUrl + "/api/v1/accounts/" + accountId;

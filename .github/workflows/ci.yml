@@ -2,9 +2,9 @@ name: Platform CI
 
 on:
   push:
-    branches: ["main", "feature/**", "milestone-*"]
+    branches: ["main", "feature/**", "milestone-*", "copilot/**", "cursor/**"]
   pull_request:
-    branches: ["main", "feature/**"]
+    branches: ["main", "feature/**", "copilot/**", "cursor/**"]
 
 permissions:
   contents: read

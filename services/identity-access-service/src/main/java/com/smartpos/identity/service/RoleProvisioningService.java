@@ -9,6 +9,9 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Copies system role templates into a newly created tenant account.
+ */
 @Service
 public class RoleProvisioningService {
 
@@ -17,12 +20,23 @@ public class RoleProvisioningService {
     private final RoleRepository roleRepository;
     private final RolePermissionRepository rolePermissionRepository;
 
+    /**
+     * Creates the role provisioning service.
+     *
+     * @param roleRepository role persistence
+     * @param rolePermissionRepository role-permission join persistence
+     */
     public RoleProvisioningService(RoleRepository roleRepository,
-                                     RolePermissionRepository rolePermissionRepository) {
+                                   RolePermissionRepository rolePermissionRepository) {
         this.roleRepository = roleRepository;
         this.rolePermissionRepository = rolePermissionRepository;
     }
 
+    /**
+     * Idempotently provisions system roles for the given account.
+     *
+     * @param accountId newly created tenant account identifier
+     */
     @Transactional
     public void provisionRolesForAccount(UUID accountId) {
         List<Role> existing = roleRepository.findByAccountId(accountId);

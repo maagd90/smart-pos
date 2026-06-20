@@ -1,10 +1,9 @@
 FROM maven:3.9-eclipse-temurin-17 AS build
 WORKDIR /workspace
-COPY pom.xml .
-COPY shared-contracts ./shared-contracts
+COPY smartpos-parent/pom.xml ./smartpos-parent/pom.xml
 COPY discovery-service/pom.xml ./discovery-service/pom.xml
 COPY discovery-service/src ./discovery-service/src
-RUN mvn -q -DskipTests -pl shared-contracts,discovery-service -am package
+RUN mvn -q -f discovery-service/pom.xml package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app

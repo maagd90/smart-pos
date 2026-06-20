@@ -15,6 +15,12 @@ public class InventoryStockClient {
     private final RestTemplate restTemplate;
     private final String inventoryBaseUrl;
 
+    /**
+     * Creates the inventory stock client.
+     *
+     * @param restTemplate HTTP client with tenant header propagation
+     * @param inventoryBaseUrl inventory service base URL
+     */
     public InventoryStockClient(RestTemplate restTemplate,
                                 @Value("${integration.inventory-service.url:http://inventory-service:8105}") String inventoryBaseUrl) {
         this.restTemplate = restTemplate;
@@ -22,7 +28,12 @@ public class InventoryStockClient {
     }
 
     /**
-     * Returns current stock for a product, or null if unavailable.
+     * Returns current stock for a product.
+     *
+     * @param storeId store identifier
+     * @param productId product identifier
+     * @return current stock level
+     * @throws InventoryUnavailableException when inventory service cannot be reached
      */
     public Integer getCurrentStock(UUID storeId, UUID productId) {
         String url = inventoryBaseUrl + "/api/v1/stores/" + storeId + "/inventory/stock/" + productId;
@@ -41,7 +52,14 @@ public class InventoryStockClient {
         return null;
     }
 
+    /** Raised when inventory service is unreachable during a stock pre-check. */
     public static class InventoryUnavailableException extends RuntimeException {
+        /**
+         * Creates the exception.
+         *
+         * @param message error message
+         * @param cause root cause
+         */
         public InventoryUnavailableException(String message, Throwable cause) {
             super(message, cause);
         }

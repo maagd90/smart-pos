@@ -7,6 +7,9 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Persistent audit trail entry for security-sensitive actions.
+ */
 @Entity
 @Table(name = "audit_logs")
 public class AuditLog {
@@ -29,7 +32,7 @@ public class AuditLog {
     @Column(name = "resource_id")
     private UUID resourceId;
 
-    @Column
+    @Column(columnDefinition = "jsonb")
     private String details;
 
     @Column(name = "ip_address")
@@ -38,9 +41,22 @@ public class AuditLog {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    /** JPA default constructor. */
     protected AuditLog() {}
 
-    public AuditLog(UUID accountId, UUID userId, String action, String resourceType, UUID resourceId, String details, String ipAddress) {
+    /**
+     * Creates a new audit log record.
+     *
+     * @param accountId tenant account identifier
+     * @param userId acting user identifier (nullable for system actions)
+     * @param action action key, e.g. auth.login
+     * @param resourceType affected resource type
+     * @param resourceId affected resource identifier
+     * @param details optional JSON payload as string
+     * @param ipAddress client IP address when available
+     */
+    public AuditLog(UUID accountId, UUID userId, String action, String resourceType,
+                    UUID resourceId, String details, String ipAddress) {
         this.id = UUID.randomUUID();
         this.accountId = accountId;
         this.userId = userId;

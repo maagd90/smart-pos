@@ -6,9 +6,9 @@
 
   <parent>
     <groupId>com.smartpos</groupId>
-    <artifactId>store-management-platform</artifactId>
+    <artifactId>smartpos-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <relativePath>../../pom.xml</relativePath>
+    <relativePath>../../smartpos-parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>refunds-service</artifactId>
