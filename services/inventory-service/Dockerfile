@@ -15,4 +15,4 @@ RUN apk add --no-cache wget
 WORKDIR /app
 COPY --from=build /workspace/services/inventory-service/target/*.jar app.jar
 EXPOSE 8105
-ENTRYPOINT ["java", "-Xmx256m", "-XX:+UseSerialGC", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx384m", "-XX:+UseSerialGC", "-jar", "app.jar"]

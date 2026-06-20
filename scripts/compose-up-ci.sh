@@ -5,7 +5,7 @@ set -euo pipefail
 # Starts infrastructure first, waits for health, then brings up platform services.
 
 COMPOSE="${COMPOSE:-docker compose}"
-MAX_WAIT="${MAX_WAIT:-60}"
+MAX_WAIT="${MAX_WAIT:-36}"
 WAIT_INTERVAL="${WAIT_INTERVAL:-5}"
 
 log() { echo "[compose-up-ci] $*"; }
@@ -13,23 +13,29 @@ log() { echo "[compose-up-ci] $*"; }
 wait_healthy() {
   local service="$1"
   local attempts=0
+  local cid health_status status
 
   log "Waiting for ${service} to become healthy..."
   while [ "$attempts" -lt "$MAX_WAIT" ]; do
-    if ${COMPOSE} ps "$service" 2>/dev/null | grep -q "(healthy)"; then
-      log "${service} is healthy"
-      return 0
-    fi
-    if ${COMPOSE} ps "$service" 2>/dev/null | grep -q "Exit"; then
-      log "${service} exited before becoming healthy"
-      ${COMPOSE} logs --tail=80 "$service" || true
-      return 1
+    cid=$(${COMPOSE} ps -q "$service" 2>/dev/null || true)
+    if [ -n "$cid" ]; then
+      status=$(docker inspect -f '{{.State.Status}}' "$cid" 2>/dev/null || echo "")
+      if [ "$status" = "exited" ]; then
+        log "${service} exited before becoming healthy"
+        ${COMPOSE} logs --tail=80 "$service" || true
+        return 1
+      fi
+      health_status=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{end}}' "$cid" 2>/dev/null || echo "")
+      if [ "$health_status" = "healthy" ]; then
+        log "${service} is healthy"
+        return 0
+      fi
     fi
     attempts=$((attempts + 1))
     sleep "$WAIT_INTERVAL"
   done
 
-  log "${service} did not become healthy in time"
+  log "${service} did not become healthy in time (last=${health_status:-unknown})"
   ${COMPOSE} ps -a "$service" || true
   ${COMPOSE} logs --tail=80 "$service" || true
   return 1
@@ -70,9 +76,19 @@ wait_healthy kafka
 
 log "Starting databases..."
 ${COMPOSE} up -d "${DB_SERVICES[@]}"
+db_pids=()
 for db in "${DB_SERVICES[@]}"; do
-  wait_healthy "$db"
+  wait_healthy "$db" &
+  db_pids+=($!)
 done
+db_failed=0
+for pid in "${db_pids[@]}"; do
+  wait "$pid" || db_failed=1
+done
+if [ "$db_failed" -ne 0 ]; then
+  dump_failed_services
+  exit 1
+fi
 
 log "Starting discovery service..."
 ${COMPOSE} up -d discovery-service
