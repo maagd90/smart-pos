@@ -1,109 +1,196 @@
-# Store Management System — Microservices Platform
+# Smart POS — Store Management Platform
 
-Multi-tenant, web + mobile store management SaaS built as independently deployable
-Java 17 + Spring Boot 3.x microservices.
+A multi-tenant SaaS platform for running retail stores: accounts, branches, inventory, sales, refunds, reporting, and admin onboarding — delivered as Java microservices with a React admin web app.
 
-**New here?** Start with the step-by-step guide: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**
-
-## Current Milestone: Platform + Core Business Flows
-
-This branch delivers a runnable microservices platform with health checks, dev authentication,
-and end-to-end business flows verified by smoke and e2e tests.
-
-### What is included
-
-- Spring Cloud Gateway as the single public API entry point
-- JWT validation, Redis rate limiting, and subscription gate (billing-service backed)
-- Eureka service discovery with Docker-friendly instance registration
-- Kafka as the async event broker (inventory updates, outbox pattern)
-- Redis for cache, rate limiting, and session infrastructure
-- PostgreSQL with one database per bounded-context service
-- Flyway baseline migration per service
-- Shared contracts library (API envelope, auth principal, domain events, tenant context)
-- Request context filter propagating gateway-forwarded identity headers
-- 12 runnable domain services with core business APIs
-- Bootstrap platform admin (idempotent seed from env vars)
-- Production admin web UI (`web-client`) with login, platform console, account onboarding, store config
-- Dev-login for CI/scripts; dev dashboard at `/dev` route
-- React + TypeScript web client
-- React Native + Expo mobile client skeleton
-- Docker Compose orchestration with staged CI startup
-- GitHub Actions CI pipeline (build, compose validation, smoke, e2e)
-- Smoke test proving all services respond through the gateway
-- E2E business smoke test (account → store → product → inventory → sale → refund → report)
-
-### What is NOT included (subsequent milestones)
-
-- Real payment, WhatsApp, or LLM integrations (stubbed behind interfaces)
-- Offline mobile sync
-- Full POS, inventory, and operational screens in the admin UI (nav shows "Coming soon")
+**Never run this before?** Follow [Step-by-step setup](#step-by-step-setup-from-zero) below. You do not need prior microservices experience.
 
 ---
 
-## Prerequisites
+## Product overview
 
-- Java 17+
-- Maven 3.9+
-- Node.js 20+
-- Docker and Docker Compose v2
-- ~16 GB RAM recommended for full stack
+### What is Smart POS?
 
-See **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** for a full setup walkthrough.
+Smart POS is a **store management system** for businesses that operate one or many retail locations. It helps you:
 
-## Quick Start
+- **Onboard organizations** — platform admins create subscriber accounts, assign subscription plans, and manage access.
+- **Run stores** — each account can open multiple branches (stores) with their own settings, timezone, and policies.
+- **Manage people** — invite users and assign roles (account owner, store manager, cashier, etc.) with per-store access where needed.
+- **Operate the business** — products, stock, point-of-sale sales, refunds/exchanges, and daily reports flow through dedicated backend services.
+- **Control billing** — subscription plans limit how many stores a customer can create; upgrading the plan unlocks more capacity.
+
+### Who uses it?
+
+| Role | What they do in the app |
+|------|-------------------------|
+| **Platform admin** | Creates customer accounts, assigns plans, manages AI keys, suspends accounts |
+| **Account owner** | Creates stores, adds users, assigns roles across the organization |
+| **Store manager** | Configures store hours, refund policy, and report delivery for a branch |
+| **Cashier / staff** | (Future UI) Runs POS and day-to-day store operations — APIs exist today |
+
+### What you get in this repository
+
+| Layer | Description |
+|-------|-------------|
+| **Backend** | 12 Spring Boot microservices + API gateway + service discovery |
+| **Admin web UI** | React app at `web-client/` — login, onboarding, store configuration |
+| **Mobile skeleton** | React Native / Expo app in `mobile-client/` (scaffold) |
+| **Infrastructure** | Docker Compose stack: PostgreSQL, Kafka, Redis, Eureka |
+| **Tests & CI** | Unit tests, health smoke tests, end-to-end business flow scripts |
+
+### What is not included yet
+
+- Live payment processing, WhatsApp, or LLM integrations (interfaces exist; providers are stubbed)
+- Full POS / inventory screens in the admin UI (nav shows “Coming soon”; APIs work)
+- Offline mobile sync
+
+---
+
+## Step-by-step setup (from zero)
+
+This section assumes a **Mac, Windows, or Linux** laptop with internet access. Copy and paste each command into a terminal.
+
+### Step 1 — Install required software
+
+Install these tools once on your machine:
+
+| Tool | Minimum version | How to check | Where to get it |
+|------|-----------------|--------------|-----------------|
+| **Git** | any recent | `git --version` | [git-scm.com](https://git-scm.com/) |
+| **Docker Desktop** (or Docker Engine + Compose) | Compose v2 | `docker compose version` | [docker.com](https://www.docker.com/products/docker-desktop/) |
+| **Java JDK** | 17+ | `java -version` | [adoptium.net](https://adoptium.net/) |
+| **Maven** | 3.9+ | `mvn -version` | [maven.apache.org](https://maven.apache.org/download.cgi) |
+| **Node.js** | 20+ | `node -version` | [nodejs.org](https://nodejs.org/) |
+
+**Tips for beginners:**
+
+- **Docker must be running** before you start the platform (open Docker Desktop and wait until it says “Running”).
+- Allocate **at least 8 GB RAM to Docker** (16 GB total machine RAM recommended). In Docker Desktop: Settings → Resources → Memory.
+- On Linux, add your user to the `docker` group if you see “permission denied” on `/var/run/docker.sock`.
+
+### Step 2 — Clone the repository
 
 ```bash
-# 1. Copy environment configuration
-cp .env.example .env
-
-# 2. Start platform (staged startup + readiness wait)
-./scripts/compose-up-ci.sh
-
-# 3. Run health smoke test
-./scripts/smoke-test.sh
-
-# 4. Run end-to-end business smoke test
-./scripts/e2e-smoke-test.sh
-
-# 5. Stop and clean
-docker compose down -v
-# or
-./scripts/local-clean.sh
+git clone https://github.com/maagd90/smart-pos.git
+cd smart-pos
 ```
 
-## Admin web UI
-
-After the stack is up, start the admin UI:
+If you are working from a feature branch:
 
 ```bash
-cd web-client
+git checkout main
+git pull
+```
+
+### Step 3 — Create your local environment file
+
+The project reads settings from a file named `.env` in the project root.
+
+```bash
+cp .env.example .env
+```
+
+For a first run, **you can leave the defaults**. Important defaults:
+
+| Setting | Default | Meaning |
+|---------|---------|---------|
+| `BOOTSTRAP_ADMIN_EMAIL` | `admin@smartpos.local` | First platform admin login email |
+| `BOOTSTRAP_ADMIN_PASSWORD` | `changeme123` | First platform admin password |
+| `JWT_SECRET` | (see `.env.example`) | Token signing key — change before production |
+| `POSTGRES_USER` / `POSTGRES_PASSWORD` | `smartpos` / `smartpos` | Database credentials inside Docker |
+
+### Step 4 — Start the platform (backend)
+
+From the project root, run:
+
+```bash
+./scripts/compose-up-ci.sh
+```
+
+**What this does:** builds Docker images, starts databases and messaging, waits until services are healthy, then starts all microservices. The first run can take **10–20 minutes** depending on your machine and network.
+
+**Alternative (manual):**
+
+```bash
+docker compose up --build -d
+./scripts/wait-for-platform.sh
+```
+
+**How you know it worked:**
+
+```bash
+curl -s http://localhost:8080/actuator/health
+```
+
+You should see `"status":"UP"`.
+
+Open in a browser:
+
+- Gateway health: http://localhost:8080/actuator/health  
+- Service registry: http://localhost:8761  
+
+### Step 5 — Run automated checks (optional but recommended)
+
+Still in the project root:
+
+```bash
+./scripts/smoke-test.sh
+./scripts/e2e-smoke-test.sh
+```
+
+- **Smoke test** — verifies every service responds through the gateway.  
+- **E2E test** — runs a full business flow (account → store → product → stock → sale → refund → report).
+
+Both should finish with exit code `0` (no error). The E2E test can take several minutes because inventory updates are asynchronous.
+
+### Step 6 — Start the admin web UI
+
+Open a **new terminal window**, then:
+
+```bash
+cd smart-pos/web-client
 npm ci
 npm run dev
 ```
 
-Open http://localhost:3000 — the Vite dev server proxies `/api` to the gateway at `:8080`.
+Open http://localhost:3000 in your browser.
 
-### Bootstrap platform admin
+The web app sends API calls to the gateway at http://localhost:8080 (via the Vite dev proxy).
 
-On first startup, `identity-access-service` seeds a platform admin when these env vars are set (defaults in `.env.example`):
+### Step 7 — Log in and walk through onboarding
 
-| Variable | Default |
-|----------|---------|
-| `BOOTSTRAP_ADMIN_EMAIL` | `admin@smartpos.local` |
-| `BOOTSTRAP_ADMIN_PASSWORD` | `changeme123` |
+1. Go to http://localhost:3000/login  
+2. Sign in with:
+   - **Email:** `admin@smartpos.local`  
+   - **Password:** `changeme123`  
+3. As **platform admin** → **Accounts**:
+   - Create a subscriber (e.g. “Acme Retail”) with an owner email and password  
+   - Assign a **business** plan (allows more stores)  
+4. Log out → sign in as the **account owner** you just created  
+5. **Stores** — create Branch A and Branch B  
+6. **Users** — add a cashier user  
+7. **Role Assignment** — assign the `cashier` role to that user **for Branch A only**  
+8. Log in as the cashier — the store picker should show only Branch A  
+9. As owner or store manager → **Store Settings**, **Refund Policy**, **Report Settings**
 
-Sign in at `/login` with those credentials. The seed is idempotent — it skips if the user already exists.
+The developer API test dashboard is still available at http://localhost:3000/dev (for engineers testing raw API flows).
 
-### Onboarding happy path (manual)
+### Step 8 — Stop everything when you are done
 
-1. **Platform admin** — create subscriber account (with owner), assign plan, rotate AI key
-2. **Account owner** — log in as owner, create stores (upgrade banner if plan limit hit), add users, assign per-store roles
-3. **Cashier** — log in; store picker shows only assigned stores
-4. **Store manager** — configure store settings, refund policy, report settings for selected store
+From the project root:
 
-The developer E2E dashboard remains at `/dev` for scripted API flow testing.
+```bash
+docker compose down -v
+```
 
-### Store manager notifications (mobile app or web shortcut)
+Or use the helper:
+
+```bash
+./scripts/local-clean.sh
+```
+
+This stops containers and removes database volumes so the next run starts fresh.
+
+### Step 9 — Store manager notifications (mobile app or web shortcut)
 
 Store managers with `deal.approve` or `inventory.change.approve` permissions can receive
 approval notifications in two ways — choose one per device:
@@ -126,17 +213,54 @@ unique constraint — so push, email, and inbox entries are never duplicated for
 On the web shortcut, browser alerts use the notification `id` as a tag and track seen IDs in
 local storage so the same pending item is not alerted twice.
 
-Alternative startup:
+---
+
+## Quick reference (experienced developers)
 
 ```bash
 cp .env.example .env
-docker compose up --build -d
-./scripts/wait-for-platform.sh
+./scripts/compose-up-ci.sh
 ./scripts/smoke-test.sh
 ./scripts/e2e-smoke-test.sh
+cd web-client && npm ci && npm run dev
 ```
 
-## Architecture
+Build and test without Docker:
+
+```bash
+mvn test
+cd web-client && npm ci && npm run build
+cd mobile-client && npm ci && npx tsc --noEmit
+```
+
+---
+
+## Troubleshooting
+
+| Problem | What to try |
+|---------|-------------|
+| `permission denied` on Docker | Start Docker Desktop; on Linux, fix docker group permissions |
+| Gateway returns **503** | Platform still starting — run `./scripts/wait-for-platform.sh` and wait 2–5 minutes |
+| Port **8080** or **8761** in use | Stop other apps using those ports, or change mappings in `docker-compose.yml` |
+| Containers keep exiting | Increase Docker memory; run `docker compose ps -a` and `docker compose logs <service-name>` |
+| E2E fails on stock count | Kafka is async — re-run the test; it retries for up to 5 minutes |
+| Admin login fails | Confirm `.env` has `BOOTSTRAP_ADMIN_*` set and identity service logs show “Bootstrap platform admin created” |
+| `npm run dev` cannot reach API | Ensure gateway is up at http://localhost:8080 before starting the web client |
+
+Diagnostic commands:
+
+```bash
+docker compose ps -a
+docker compose logs --tail=50 api-gateway
+docker compose logs --tail=50 identity-access-service
+curl -s http://localhost:8761/eureka/apps | head
+```
+
+More detail: **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)**
+
+---
+
+## Architecture (high level)
 
 ```
 ┌─────────────┐     ┌──────────────────────────────────────────────────┐
@@ -158,137 +282,108 @@ docker compose up --build -d
              └─────────────┘     └─────────────────┘         └──────────────┘
 ```
 
-All services communicate via:
-- **Synchronous:** REST through the gateway or direct service-to-service via Eureka
-- **Asynchronous:** Kafka events using the shared `DomainEvent` schema
+- **Synchronous:** REST through the gateway (or service-to-service via Eureka)  
+- **Asynchronous:** Kafka domain events (e.g. inventory updates after sales/refunds)
 
-## Gateway Access Rule
+**Security rule:** only the **API gateway** is exposed on host ports by default. Individual microservices run inside Docker and are not directly reachable unless you use `docker-compose.debug.yml`.
 
-**Only the API gateway is publicly exposed.** Domain services are internal only —
-they are not accessible on host ports in the default Docker Compose configuration.
-Use `docker-compose.debug.yml` for direct service access during development:
+Deep dive: **[docs/architecture.md](docs/architecture.md)**
 
-```bash
-docker compose -f docker-compose.yml -f docker-compose.debug.yml up --build -d
-```
+---
 
-## Gateway Routes
+## Repository layout
 
-| Path Pattern | Target Service |
-|---|---|
-| `/api/v1/auth/**` | identity-access-service |
-| `/api/v1/accounts/*/users/**` | identity-access-service |
-| `/api/v1/accounts/**` | tenant-admin-service |
-| `/api/v1/stores/{id}` | tenant-admin-service |
-| `/api/v1/billing/**` | billing-subscription-service |
-| `/api/v1/subscriptions/**` | billing-subscription-service |
-| `/api/v1/stores/*/products/**` | catalog-pricing-service |
-| `/api/v1/stores/*/inventory/**` | inventory-service |
-| `/api/v1/stores/*/sales/**` | sales-service |
-| `/api/v1/stores/*/refunds/**` | refunds-service |
-| `/api/v1/stores/*/customers/**` | customers-privacy-service |
-| `/api/v1/stores/*/deals/**` | ai-deals-service |
-| `/api/v1/deals/**` | ai-deals-service |
-| `/api/v1/stores/*/approvals/**` | notifications-approvals-service |
-| `/api/v1/notifications/**` | notifications-approvals-service |
-| `/api/v1/stores/*/notifications/**` | notifications-approvals-service |
-| `/api/v1/stores/*/messages/**` | messaging-delivery-service |
-| `/api/v1/stores/*/reports/**` | reporting-finance-service |
-| `/api/v1/stores/*/expenses/**` | reporting-finance-service |
-| `/api/v1/platform/health/**` | Per-service health routes (see below) |
-| `/api/v1/platform/**` (other) | tenant-admin-service (admin) |
+| Path | Purpose |
+|------|---------|
+| `api-gateway/` | Single public entry point, JWT, rate limiting, subscription gate |
+| `discovery-service/` | Eureka service registry |
+| `services/*` | Domain microservices (identity, tenant, billing, catalog, inventory, sales, refunds, …) |
+| `shared-contracts/` | Shared API envelope, auth context, events, security annotations |
+| `web-client/` | React admin UI (login, platform console, account/store management, PWA approvals) |
+| `mobile-client/` | React Native / Expo app (store manager approvals inbox + push) |
+| `scripts/` | Compose startup, smoke tests, e2e tests, cleanup |
+| `docs/` | Extended guides (getting started, architecture, definition of done) |
+| `.env.example` | Template environment variables — copy to `.env` |
+| `docker-compose.yml` | Full local stack definition |
 
-## Health Check Endpoints
+---
 
-Each service is reachable through the gateway at:
+## Service catalog
 
-```
-GET /api/v1/platform/health/{service-name}
-```
+| Service | Port (internal) | Scope |
+|---------|-----------------|-------|
+| api-gateway | 8080 | Gateway, JWT, rate limit, subscription gate |
+| discovery-service | 8761 | Eureka registry |
+| identity-access-service | 8101 | Users, roles, permissions, auth |
+| tenant-admin-service | 8102 | Accounts, stores, platform admin |
+| billing-subscription-service | 8103 | Plans, subscriptions, entitlements |
+| catalog-pricing-service | 8104 | Products, pricing, refund policy |
+| inventory-service | 8105 | Stock ledger |
+| sales-service | 8106 | POS transactions |
+| refunds-service | 8107 | Refunds and exchanges |
+| customers-privacy-service | 8108 | Customer profiles |
+| ai-deals-service | 8109 | Promotions / deals |
+| notifications-approvals-service | 8110 | Approvals, notifications |
+| messaging-delivery-service | 8111 | Message delivery (stub) |
+| reporting-finance-service | 8112 | Reports, expenses |
 
-Available service health routes:
+Health check through gateway: `GET /api/v1/platform/health/{service-name}`  
+Example: http://localhost:8080/api/v1/platform/health/inventory
 
-| Endpoint | Service |
-|---|---|
-| `/api/v1/platform/health/identity-access` | Identity and Access |
-| `/api/v1/platform/health/tenant-admin` | Tenant and Admin |
-| `/api/v1/platform/health/billing-subscription` | Billing and Subscription |
-| `/api/v1/platform/health/catalog-pricing` | Catalog and Pricing |
-| `/api/v1/platform/health/inventory` | Inventory |
-| `/api/v1/platform/health/sales` | Sales |
-| `/api/v1/platform/health/refunds` | Refunds |
-| `/api/v1/platform/health/customers-privacy` | Customers and Privacy |
-| `/api/v1/platform/health/ai-deals` | AI Deals |
-| `/api/v1/platform/health/notifications-approvals` | Notifications and Approvals |
-| `/api/v1/platform/health/messaging-delivery` | Messaging and Delivery |
-| `/api/v1/platform/health/reporting-finance` | Reporting and Finance |
+---
 
-Infrastructure health:
-- Discovery: `http://localhost:8761/actuator/health`
-- Gateway: `http://localhost:8080/actuator/health`
+## Gateway routes (summary)
 
-## Rate Limiting
+| Path pattern | Target |
+|--------------|--------|
+| `/api/v1/auth/**` | Identity & access |
+| `/api/v1/accounts/**` | Tenant admin |
+| `/api/v1/platform/**` | Platform admin & billing |
+| `/api/v1/stores/*/products/**` | Catalog |
+| `/api/v1/stores/*/inventory/**` | Inventory |
+| `/api/v1/stores/*/sales/**` | Sales |
+| `/api/v1/stores/*/refunds/**` | Refunds |
+| `/api/v1/notifications/**` | Notifications & approvals |
+| `/api/v1/stores/*/approvals/**` | Notifications & approvals |
+| `/api/v1/stores/*/reports/**` | Reporting |
 
-Redis-backed rate limiting is configured at the gateway for business routes.
-Health routes (`/api/v1/platform/health/**`) are excluded from the global rate limiter
-so smoke tests can probe all services quickly.
+---
 
-| Route | Replenish Rate | Burst Capacity |
-|---|---|---|
-| `/api/v1/auth/**` | 10 req/sec | 20 |
-| Other business `/api/v1/**` | 50 req/sec | 100 |
+## Subscription plans
 
-Key resolution: authenticated user ID when available, remote IP address otherwise.
-All values are configurable via environment variables.
+New accounts receive a **starter** plan (1 store) by default. Creating more stores than the plan allows returns HTTP **402** with code `UPGRADE_REQUIRED`. Platform admins assign plans from the **Accounts** screen in the admin UI.
 
-## Subscription Gate
+| Plan | Max stores | Max users |
+|------|------------|-----------|
+| starter | 1 | 5 |
+| business | 5 | 25 |
+| enterprise | 50 | 500 |
 
-The gateway subscription gate calls `billing-subscription-service` to evaluate plan limits.
-Store creation returns HTTP 402 with `UPGRADE_REQUIRED` when the account exceeds `max_stores`.
+---
 
-Possible gate decisions: `ALLOW`, `DENY`, `READ_ONLY`, `UPGRADE_REQUIRED`.
+## CI pipeline
 
-Set `gateway.subscription.remote-enabled=false` to use the local allow-all stub during development.
+GitHub Actions runs on every push and pull request:
 
-## Stubbed External Integrations
+1. `mvn test` — Java unit tests  
+2. `web-client` — `npm ci && npm run build`  
+3. `mobile-client` — TypeScript check  
+4. `docker compose config` — validate Compose file  
+5. Smoke test — all health routes  
+6. E2E test — full business flow  
 
-The following integrations are designed behind interfaces but not connected to real providers:
+Local escape hatch (not used in CI): `SMOKE_TEST_MODE=mock` skips live checks in smoke scripts.
 
-- **BillingProvider** — payment processing (abstract interface, stub implementation)
-- **MessagingProvider** — WhatsApp Cloud API (abstract interface, stub implementation)
-- **LlmProvider** — AI model calls (rules-first approach, optional LLM layer)
+---
 
-All can be swapped and disabled via configuration/entitlements.
+## Further reading
 
-## CI Pipeline
+- **[docs/GETTING_STARTED.md](docs/GETTING_STARTED.md)** — extended setup, env vars, troubleshooting  
+- **[docs/architecture.md](docs/architecture.md)** — service boundaries, Kafka, shared contracts  
+- **[docs/definition-of-done.md](docs/definition-of-done.md)** — milestone acceptance criteria  
 
-The GitHub Actions CI runs on every pull request and push:
+---
 
-1. **Java Build** — `mvn -q test`
-2. **Web Client Build** — `npm ci && npm run build`
-3. **Mobile Client Type Check** — `npm ci && npx tsc --noEmit`
-4. **Docker Compose Validation** — `docker compose config`
-5. **Smoke Test** — staged Docker Compose startup, platform readiness wait, health verification
-6. **E2E Business Smoke Test** — full business flow through the gateway
+## License
 
-> **Local dev escape hatch:** `SMOKE_TEST_MODE=mock` skips live checks in the smoke scripts.
-> CI always runs real smoke and e2e tests.
-
-## Service Catalog
-
-| Service | Port | Database | Scope |
-|---|---|---|---|
-| api-gateway | 8080 | — | Single entry point, JWT, rate limit, subscription gate |
-| discovery-service | 8761 | — | Eureka service registry |
-| identity-access-service | 8101 | identity_access_db | Users, roles, permissions, JWT |
-| tenant-admin-service | 8102 | tenant_admin_db | Accounts, stores, config |
-| billing-subscription-service | 8103 | billing_subscription_db | Plans, subscriptions, entitlements |
-| catalog-pricing-service | 8104 | catalog_pricing_db | Products, pricing |
-| inventory-service | 8105 | inventory_db | Stock ledger, receiving |
-| sales-service | 8106 | sales_db | POS transactions |
-| refunds-service | 8107 | refunds_db | Returns, refunds |
-| customers-privacy-service | 8108 | customers_privacy_db | Customer profiles, PII vault |
-| ai-deals-service | 8109 | ai_deals_db | Deal generation, inactivity scheduler |
-| notifications-approvals-service | 8110 | notifications_approvals_db | Approval workflows, notifications |
-| messaging-delivery-service | 8111 | messaging_delivery_db | WhatsApp/email delivery |
-| reporting-finance-service | 8112 | reporting_finance_db | Reports, expenses, P&L |
+See repository license file if present. Default credentials and JWT secrets in `.env.example` are for **local development only** — change them before any production deployment.
