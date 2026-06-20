@@ -11,4 +11,4 @@ RUN apk add --no-cache wget
 WORKDIR /app
 COPY --from=build /workspace/discovery-service/target/*.jar app.jar
 EXPOSE 8761
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Xmx256m", "-XX:+UseSerialGC", "-jar", "app.jar"]
