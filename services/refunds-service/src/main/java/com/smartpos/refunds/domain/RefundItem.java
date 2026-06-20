@@ -10,9 +10,6 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-/**
- * Represents a line item within a refund transaction.
- */
 @Entity
 @Table(name = "refund_items")
 public class RefundItem {
@@ -42,14 +39,28 @@ public class RefundItem {
     @Column(nullable = false)
     private boolean resellable;
 
+    @Column(name = "base_amount", nullable = false)
+    private BigDecimal baseAmount = BigDecimal.ZERO;
+
+    @Column(name = "proration_pct", nullable = false)
+    private BigDecimal prorationPct = BigDecimal.valueOf(100);
+
+    @Column(name = "prorated_amount", nullable = false)
+    private BigDecimal proratedAmount = BigDecimal.ZERO;
+
+    @Column(name = "restocking_fee", nullable = false)
+    private BigDecimal restockingFee = BigDecimal.ZERO;
+
+    @Column(name = "refund_amount", nullable = false)
+    private BigDecimal refundAmount = BigDecimal.ZERO;
+
     protected RefundItem() {
     }
 
-    /**
-     * Creates a refund item.
-     */
     public RefundItem(Refund refund, UUID productId, String productName, int quantity,
-                      BigDecimal unitPrice, BigDecimal lineTotal, boolean resellable) {
+                      BigDecimal unitPrice, BigDecimal lineTotal, boolean resellable,
+                      BigDecimal baseAmount, BigDecimal prorationPct, BigDecimal proratedAmount,
+                      BigDecimal restockingFee, BigDecimal refundAmount) {
         this.id = UUID.randomUUID();
         this.refund = refund;
         this.productId = productId;
@@ -58,33 +69,23 @@ public class RefundItem {
         this.unitPrice = unitPrice;
         this.lineTotal = lineTotal;
         this.resellable = resellable;
+        this.baseAmount = baseAmount;
+        this.prorationPct = prorationPct;
+        this.proratedAmount = proratedAmount;
+        this.restockingFee = restockingFee;
+        this.refundAmount = refundAmount;
     }
 
-    public UUID getId() {
-        return id;
-    }
-
-    public UUID getProductId() {
-        return productId;
-    }
-
-    public String getProductName() {
-        return productName;
-    }
-
-    public int getQuantity() {
-        return quantity;
-    }
-
-    public BigDecimal getUnitPrice() {
-        return unitPrice;
-    }
-
-    public BigDecimal getLineTotal() {
-        return lineTotal;
-    }
-
-    public boolean isResellable() {
-        return resellable;
-    }
+    public UUID getId() { return id; }
+    public UUID getProductId() { return productId; }
+    public String getProductName() { return productName; }
+    public int getQuantity() { return quantity; }
+    public BigDecimal getUnitPrice() { return unitPrice; }
+    public BigDecimal getLineTotal() { return lineTotal; }
+    public boolean isResellable() { return resellable; }
+    public BigDecimal getBaseAmount() { return baseAmount; }
+    public BigDecimal getProrationPct() { return prorationPct; }
+    public BigDecimal getProratedAmount() { return proratedAmount; }
+    public BigDecimal getRestockingFee() { return restockingFee; }
+    public BigDecimal getRefundAmount() { return refundAmount; }
 }

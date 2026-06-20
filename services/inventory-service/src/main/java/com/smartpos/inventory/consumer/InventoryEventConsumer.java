@@ -77,6 +77,21 @@ public class InventoryEventConsumer {
         }
     }
 
+    @KafkaListener(topics = "sale.voided", groupId = "inventory-service")
+    public void handleSaleVoided(String payload) {
+        JsonNode root = parsePayload(payload, "sale.voided");
+        UUID storeId = uuid(root, "storeId");
+        UUID accountId = uuid(root, "accountId");
+        UUID saleId = uuid(root, "saleId");
+
+        for (JsonNode item : root.get("items")) {
+            UUID productId = uuid(item, "productId");
+            int quantity = item.get("quantity").asInt();
+            applyMovementIdempotently(
+                    storeId, accountId, productId, "void", quantity, "sale_void", saleId);
+        }
+    }
+
     /**
      * Saves a movement once per event line; duplicates are acknowledged without rethrow.
      */

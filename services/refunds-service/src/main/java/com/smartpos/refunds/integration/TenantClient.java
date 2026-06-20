@@ -37,4 +37,25 @@ public class TenantClient {
         }
         return null;
     }
+
+    public String getStoreTimezone(UUID accountId, UUID storeId) {
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> storesResponse = restTemplate.getForObject(
+                    tenantBaseUrl + "/api/v1/accounts/" + accountId + "/stores", Map.class);
+            if (storesResponse != null && storesResponse.get("data") instanceof java.util.List<?> stores) {
+                for (Object store : stores) {
+                    if (store instanceof Map<?, ?> storeMap && storeId.toString().equals(String.valueOf(storeMap.get("id")))) {
+                        Object tz = storeMap.get("timezone");
+                        if (tz != null && !tz.toString().isBlank()) {
+                            return tz.toString();
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
+    }
 }

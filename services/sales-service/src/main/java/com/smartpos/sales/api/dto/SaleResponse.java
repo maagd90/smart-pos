@@ -29,14 +29,19 @@ public record SaleResponse(UUID id, UUID storeId, BigDecimal total, String curre
      */
     public record SaleItemResponse(UUID productId, String productName, int quantity,
                                    BigDecimal unitPrice, BigDecimal lineTotal,
-                                   BigDecimal costPrice, BigDecimal lineCost) {
-        /**
-         * Creates from domain entity.
-         */
+                                   BigDecimal costPrice, BigDecimal lineCost,
+                                   boolean refundable, int refundWindowDays,
+                                   boolean exchangeable, int exchangeWindowDays,
+                                   BigDecimal restockingFeePct, BigDecimal restockingFeeFlat,
+                                   String refundProrationTiersJson) {
         public static SaleItemResponse from(SaleItem item) {
             return new SaleItemResponse(item.getProductId(), item.getProductName(),
                     item.getQuantity(), item.getUnitPrice(), item.getLineTotal(),
-                    item.getCostPrice(), item.getLineCost());
+                    item.getCostPrice(), item.getLineCost(),
+                    item.isRefundable(), item.getRefundWindowDays(),
+                    item.isExchangeable(), item.getExchangeWindowDays(),
+                    item.getRestockingFeePct(), item.getRestockingFeeFlat(),
+                    item.getRefundProrationTiersJson());
         }
     }
 }

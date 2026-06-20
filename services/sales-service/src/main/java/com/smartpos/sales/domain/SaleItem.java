@@ -10,9 +10,6 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-/**
- * Represents a line item within a sale transaction.
- */
 @Entity
 @Table(name = "sale_items")
 public class SaleItem {
@@ -45,14 +42,34 @@ public class SaleItem {
     @Column(name = "line_cost", nullable = false)
     private BigDecimal lineCost;
 
+    @Column(nullable = false)
+    private boolean refundable = true;
+
+    @Column(name = "refund_window_days", nullable = false)
+    private int refundWindowDays = 14;
+
+    @Column(nullable = false)
+    private boolean exchangeable = true;
+
+    @Column(name = "exchange_window_days", nullable = false)
+    private int exchangeWindowDays = 14;
+
+    @Column(name = "restocking_fee_pct", nullable = false)
+    private BigDecimal restockingFeePct = BigDecimal.ZERO;
+
+    @Column(name = "restocking_fee_flat", nullable = false)
+    private BigDecimal restockingFeeFlat = BigDecimal.ZERO;
+
+    @Column(name = "refund_proration_tiers", nullable = false)
+    private String refundProrationTiersJson = "[]";
+
     protected SaleItem() {
     }
 
-    /**
-     * Creates a sale item with cost tracking.
-     */
     public SaleItem(Sale sale, UUID productId, String productName, int quantity,
-                    BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal costPrice, BigDecimal lineCost) {
+                    BigDecimal unitPrice, BigDecimal lineTotal, BigDecimal costPrice, BigDecimal lineCost,
+                    boolean refundable, int refundWindowDays, boolean exchangeable, int exchangeWindowDays,
+                    BigDecimal restockingFeePct, BigDecimal restockingFeeFlat, String refundProrationTiersJson) {
         this.id = UUID.randomUUID();
         this.sale = sale;
         this.productId = productId;
@@ -62,6 +79,13 @@ public class SaleItem {
         this.lineTotal = lineTotal;
         this.costPrice = costPrice;
         this.lineCost = lineCost;
+        this.refundable = refundable;
+        this.refundWindowDays = refundWindowDays;
+        this.exchangeable = exchangeable;
+        this.exchangeWindowDays = exchangeWindowDays;
+        this.restockingFeePct = restockingFeePct;
+        this.restockingFeeFlat = restockingFeeFlat;
+        this.refundProrationTiersJson = refundProrationTiersJson != null ? refundProrationTiersJson : "[]";
     }
 
     public UUID getId() { return id; }
@@ -73,4 +97,11 @@ public class SaleItem {
     public BigDecimal getLineTotal() { return lineTotal; }
     public BigDecimal getCostPrice() { return costPrice; }
     public BigDecimal getLineCost() { return lineCost; }
+    public boolean isRefundable() { return refundable; }
+    public int getRefundWindowDays() { return refundWindowDays; }
+    public boolean isExchangeable() { return exchangeable; }
+    public int getExchangeWindowDays() { return exchangeWindowDays; }
+    public BigDecimal getRestockingFeePct() { return restockingFeePct; }
+    public BigDecimal getRestockingFeeFlat() { return restockingFeeFlat; }
+    public String getRefundProrationTiersJson() { return refundProrationTiersJson; }
 }

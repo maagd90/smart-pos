@@ -71,11 +71,14 @@ public class Refund {
     /**
      * Adds a refund item.
      */
-    public void addItem(UUID productId, String productName, int quantity, BigDecimal unitPrice, boolean resellable) {
+    public void addItem(UUID productId, String productName, int quantity, BigDecimal unitPrice,
+                        boolean resellable, BigDecimal baseAmount, BigDecimal prorationPct,
+                        BigDecimal proratedAmount, BigDecimal restockingFee, BigDecimal refundAmount) {
         BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
-        RefundItem item = new RefundItem(this, productId, productName, quantity, unitPrice, lineTotal, resellable);
+        RefundItem item = new RefundItem(this, productId, productName, quantity, unitPrice, lineTotal,
+                resellable, baseAmount, prorationPct, proratedAmount, restockingFee, refundAmount);
         this.items.add(item);
-        this.total = this.total.add(lineTotal);
+        this.total = this.total.add(refundAmount);
     }
 
     public UUID getId() {

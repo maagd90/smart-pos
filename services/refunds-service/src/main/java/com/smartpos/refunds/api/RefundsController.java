@@ -10,11 +10,18 @@ import com.smartpos.refunds.api.dto.CreateRefundRequest;
 import com.smartpos.refunds.api.dto.RefundResponse;
 import com.smartpos.refunds.domain.Refund;
 import com.smartpos.refunds.domain.RefundRepository;
+import com.smartpos.refunds.domain.RefundedQuantity;
+import com.smartpos.refunds.domain.RefundedQuantityRepository;
+import com.smartpos.refunds.integration.SalesClient;
 import com.smartpos.refunds.integration.TenantClient;
 import com.smartpos.refunds.outbox.OutboxEvent;
 import com.smartpos.refunds.outbox.OutboxRepository;
+import com.smartpos.refunds.service.RefundEligibilityService;
+import com.smartpos.refunds.service.RefundPricingResult;
+import com.smartpos.refunds.service.RefundPricingService;
 import java.net.URI;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,14 +43,26 @@ public class RefundsController {
 
     private final RefundRepository refundRepository;
     private final OutboxRepository outboxRepository;
+    private final RefundedQuantityRepository refundedQuantityRepository;
     private final TenantClient tenantClient;
+    private final SalesClient salesClient;
+    private final RefundEligibilityService eligibilityService;
+    private final RefundPricingService pricingService;
 
     public RefundsController(RefundRepository refundRepository,
                              OutboxRepository outboxRepository,
-                             TenantClient tenantClient) {
+                             RefundedQuantityRepository refundedQuantityRepository,
+                             TenantClient tenantClient,
+                             SalesClient salesClient,
+                             RefundEligibilityService eligibilityService,
+                             RefundPricingService pricingService) {
         this.refundRepository = refundRepository;
         this.outboxRepository = outboxRepository;
+        this.refundedQuantityRepository = refundedQuantityRepository;
         this.tenantClient = tenantClient;
+        this.salesClient = salesClient;
+        this.eligibilityService = eligibilityService;
+        this.pricingService = pricingService;
     }
 
     @PostMapping
@@ -63,20 +82,54 @@ public class RefundsController {
         }
         UUID accountId = context.accountId();
 
+        SalesClient.SaleDetails sale = salesClient.getSale(storeId, request.saleId());
+        if (sale == null) {
+            return ResponseEntity.notFound().build();
+        }
+
         String currency = request.currency();
         if (currency == null || currency.isBlank()) {
             currency = tenantClient.getAccountCurrency(accountId);
         }
         if (currency == null || currency.isBlank()) {
-            return ResponseEntity.badRequest()
-                    .body(ApiEnvelope.fail(ApiError.of("INVALID_REQUEST", "currency could not be resolved from account config")));
+            currency = sale.currency();
+        }
+
+        ZoneId storeTimezone = resolveStoreTimezone(accountId, storeId);
+
+        for (CreateRefundRequest.RefundItemRequest item : request.items()) {
+            SalesClient.SaleLineDetails saleLine = eligibilityService.findSaleLine(sale, item.productId());
+            if (saleLine == null) {
+                return ResponseEntity.badRequest()
+                        .body(ApiEnvelope.fail(ApiError.of("PRODUCT_NOT_ON_SALE",
+                                "Product not found on sale: " + item.productId())));
+            }
+            var failure = eligibilityService.checkRefundEligibility(sale, saleLine, item.quantity(), storeTimezone);
+            if (failure.isPresent()) {
+                return ResponseEntity.badRequest()
+                        .body(ApiEnvelope.fail(ApiError.of(failure.get().code(), failure.get().message())));
+            }
         }
 
         Refund refund = new Refund(storeId, accountId, request.saleId(), currency);
         for (CreateRefundRequest.RefundItemRequest item : request.items()) {
-            refund.addItem(item.productId(), item.productName(), item.quantity(), item.unitPrice(), item.resellable());
+            SalesClient.SaleLineDetails saleLine = eligibilityService.findSaleLine(sale, item.productId());
+            RefundPricingResult pricing = pricingService.computeRefundPricing(
+                    saleLine, item.quantity(), sale.createdAt(), storeTimezone);
+            refund.addItem(saleLine.productId(), saleLine.productName(), item.quantity(),
+                    saleLine.unitPrice(), item.resellable(),
+                    pricing.baseAmount(), pricing.prorationPct(), pricing.proratedAmount(),
+                    pricing.restockingFee(), pricing.refundAmount());
         }
         refund = refundRepository.save(refund);
+
+        for (CreateRefundRequest.RefundItemRequest item : request.items()) {
+            RefundedQuantity rq = refundedQuantityRepository
+                    .findByStoreIdAndSaleIdAndProductId(storeId, request.saleId(), item.productId())
+                    .orElseGet(() -> new RefundedQuantity(storeId, request.saleId(), item.productId(), 0));
+            rq.addQuantity(item.quantity());
+            refundedQuantityRepository.save(rq);
+        }
 
         List<Map<String, Object>> resellableItems = request.items().stream()
                 .filter(CreateRefundRequest.RefundItemRequest::resellable)
@@ -91,8 +144,7 @@ public class RefundsController {
                     "storeId", storeId.toString(),
                     "accountId", accountId.toString(),
                     "items", resellableItems);
-            OutboxEvent event = new OutboxEvent("Refund", refund.getId(), "refund.created", payload);
-            outboxRepository.save(event);
+            outboxRepository.save(new OutboxEvent("Refund", refund.getId(), "refund.created", payload));
         }
 
         return ResponseEntity
@@ -135,6 +187,11 @@ public class RefundsController {
         }
         List<RefundResponse> responses = refunds.stream().map(RefundResponse::from).toList();
         return ResponseEntity.ok(ApiEnvelope.ok(responses));
+    }
+
+    private ZoneId resolveStoreTimezone(UUID accountId, UUID storeId) {
+        String tz = tenantClient.getStoreTimezone(accountId, storeId);
+        return tz != null ? ZoneId.of(tz) : ZoneId.of("Asia/Dubai");
     }
 
     private UUID requireAccountId() {
