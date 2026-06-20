@@ -10,6 +10,7 @@ RUN mvn -q -f shared-contracts/pom.xml install -DskipTests
 RUN mvn -q -f api-gateway/pom.xml package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
+RUN apk add --no-cache wget
 WORKDIR /app
 COPY --from=build /workspace/api-gateway/target/*.jar app.jar
 EXPOSE 8080

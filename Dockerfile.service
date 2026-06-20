@@ -15,6 +15,7 @@ RUN mvn -q -f shared-contracts/pom.xml install -DskipTests
 RUN mvn -q -f ${SERVICE_MODULE}/pom.xml package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
+RUN apk add --no-cache wget
 WORKDIR /app
 ARG SERVICE_MODULE
 COPY --from=build /workspace/${SERVICE_MODULE}/target/*.jar app.jar

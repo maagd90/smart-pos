@@ -7,6 +7,7 @@ RUN mvn -q -f smartpos-parent/pom.xml install -N -DskipTests
 RUN mvn -q -f discovery-service/pom.xml package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
+RUN apk add --no-cache wget
 WORKDIR /app
 COPY --from=build /workspace/discovery-service/target/*.jar app.jar
 EXPOSE 8761

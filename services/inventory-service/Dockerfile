@@ -11,6 +11,7 @@ RUN mvn -q -f shared-contracts/pom.xml install -DskipTests
 RUN mvn -q -f services/inventory-service/pom.xml test package -DskipTests
 
 FROM eclipse-temurin:17-jre-alpine
+RUN apk add --no-cache wget
 WORKDIR /app
 COPY --from=build /workspace/services/inventory-service/target/*.jar app.jar
 EXPOSE 8105
