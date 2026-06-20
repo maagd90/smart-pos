@@ -2,15 +2,10 @@ package com.smartpos.aideals;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-/**
- * AI Deals Service microservice application.
- *
- * <p><strong>Milestone 1:</strong> Runnable skeleton with health endpoint,
- * database connectivity, Flyway migrations, Kafka connectivity, and
- * Eureka registration. Business logic is implemented in subsequent milestones.</p>
- */
 @SpringBootApplication
+@EnableScheduling
 public class AiDealsServiceApplication {
 
     /**
