@@ -5,7 +5,7 @@
 # Use docker-compose.debug.yml for direct service access during development.
 
 x-eureka-env: &eureka-env
-  EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+  EUREKA_INSTANCE_PREFER_IP_ADDRESS: "false"
   EUREKA_CLIENT_REGISTRY_FETCH_INTERVAL_SECONDS: "5"
   EUREKA_CLIENT_INITIAL_INSTANCE_INFO_REPLICATION_INTERVAL_SECONDS: "5"
 

@@ -86,7 +86,7 @@ jobs:
         run: ./scripts/e2e-smoke-test.sh
       - name: Print logs on failure
         if: failure()
-        run: docker compose logs --tail=100
+        run: docker compose logs --tail=200 api-gateway identity-access-service inventory-service
       - name: Tear down
         if: always()
         run: docker compose down -v

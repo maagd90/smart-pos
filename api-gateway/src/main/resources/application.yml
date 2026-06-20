@@ -9,7 +9,7 @@ spring:
       routes:
         # --- Identity & Access ---
         - id: identity-auth
-          uri: lb://identity-access-service
+          uri: http://identity-access-service:8101
           predicates:
             - Path=/api/v1/auth/**
           filters:
@@ -19,180 +19,180 @@ spring:
                 redis-rate-limiter.burstCapacity: ${AUTH_RATE_LIMIT_BURST:20}
                 key-resolver: "#{@userOrIpKeyResolver}"
         - id: identity-users
-          uri: lb://identity-access-service
+          uri: http://identity-access-service:8101
           order: 0
           predicates:
             - Path=/api/v1/accounts/*/users/**
 
         # --- Tenant & Admin ---
         - id: tenant-accounts
-          uri: lb://tenant-admin-service
+          uri: http://tenant-admin-service:8102
           order: 100
           predicates:
             - Path=/api/v1/accounts/**
         - id: tenant-stores
-          uri: lb://tenant-admin-service
+          uri: http://tenant-admin-service:8102
           predicates:
             - Path=/api/v1/stores/{storeId}
             - Method=GET,PUT,DELETE
 
         # --- Billing & Subscription ---
         - id: billing
-          uri: lb://billing-subscription-service
+          uri: http://billing-subscription-service:8103
           predicates:
             - Path=/api/v1/billing/**
         - id: subscriptions
-          uri: lb://billing-subscription-service
+          uri: http://billing-subscription-service:8103
           predicates:
             - Path=/api/v1/subscriptions/**
 
         # --- Catalog & Pricing ---
         - id: catalog-pricing
-          uri: lb://catalog-pricing-service
+          uri: http://catalog-pricing-service:8104
           predicates:
             - Path=/api/v1/stores/*/products/**
 
         # --- Inventory ---
         - id: inventory
-          uri: lb://inventory-service
+          uri: http://inventory-service:8105
           predicates:
             - Path=/api/v1/stores/*/inventory/**
 
         # --- Sales ---
         - id: sales
-          uri: lb://sales-service
+          uri: http://sales-service:8106
           predicates:
             - Path=/api/v1/stores/*/sales/**
 
         # --- Refunds ---
         - id: refunds
-          uri: lb://refunds-service
+          uri: http://refunds-service:8107
           predicates:
             - Path=/api/v1/stores/*/refunds/**
 
         # --- Customers & Privacy ---
         - id: customers-privacy
-          uri: lb://customers-privacy-service
+          uri: http://customers-privacy-service:8108
           predicates:
             - Path=/api/v1/stores/*/customers/**
 
         # --- AI Deals ---
         - id: ai-deals-store
-          uri: lb://ai-deals-service
+          uri: http://ai-deals-service:8109
           predicates:
             - Path=/api/v1/stores/*/deals/**
         - id: ai-deals-global
-          uri: lb://ai-deals-service
+          uri: http://ai-deals-service:8109
           predicates:
             - Path=/api/v1/deals/**
 
         # --- Notifications & Approvals ---
         - id: approvals
-          uri: lb://notifications-approvals-service
+          uri: http://notifications-approvals-service:8110
           predicates:
             - Path=/api/v1/stores/*/approvals/**
         - id: notifications
-          uri: lb://notifications-approvals-service
+          uri: http://notifications-approvals-service:8110
           predicates:
             - Path=/api/v1/stores/*/notifications/**
 
         # --- Messaging & Delivery ---
         - id: messaging
-          uri: lb://messaging-delivery-service
+          uri: http://messaging-delivery-service:8111
           predicates:
             - Path=/api/v1/stores/*/messages/**
 
         # --- Reporting & Finance ---
         - id: reports
-          uri: lb://reporting-finance-service
+          uri: http://reporting-finance-service:8112
           predicates:
             - Path=/api/v1/stores/*/reports/**
         - id: expenses
-          uri: lb://reporting-finance-service
+          uri: http://reporting-finance-service:8112
           predicates:
             - Path=/api/v1/stores/*/expenses/**
 
         # --- Health routes for each service (accessible without auth) ---
         # NOTE: These must be defined BEFORE the platform-admin catch-all route.
         - id: health-identity
-          uri: lb://identity-access-service
+          uri: http://identity-access-service:8101
           order: -100
           predicates:
             - Path=/api/v1/platform/health/identity-access
           filters:
             - RewritePath=/api/v1/platform/health/identity-access, /api/v1/health
         - id: health-tenant
-          uri: lb://tenant-admin-service
+          uri: http://tenant-admin-service:8102
           order: -100
           predicates:
             - Path=/api/v1/platform/health/tenant-admin
           filters:
             - RewritePath=/api/v1/platform/health/tenant-admin, /api/v1/health
         - id: health-billing
-          uri: lb://billing-subscription-service
+          uri: http://billing-subscription-service:8103
           order: -100
           predicates:
             - Path=/api/v1/platform/health/billing-subscription
           filters:
             - RewritePath=/api/v1/platform/health/billing-subscription, /api/v1/health
         - id: health-catalog
-          uri: lb://catalog-pricing-service
+          uri: http://catalog-pricing-service:8104
           order: -100
           predicates:
             - Path=/api/v1/platform/health/catalog-pricing
           filters:
             - RewritePath=/api/v1/platform/health/catalog-pricing, /api/v1/health
         - id: health-inventory
-          uri: lb://inventory-service
+          uri: http://inventory-service:8105
           order: -100
           predicates:
             - Path=/api/v1/platform/health/inventory
           filters:
             - RewritePath=/api/v1/platform/health/inventory, /api/v1/health
         - id: health-sales
-          uri: lb://sales-service
+          uri: http://sales-service:8106
           order: -100
           predicates:
             - Path=/api/v1/platform/health/sales
           filters:
             - RewritePath=/api/v1/platform/health/sales, /api/v1/health
         - id: health-refunds
-          uri: lb://refunds-service
+          uri: http://refunds-service:8107
           order: -100
           predicates:
             - Path=/api/v1/platform/health/refunds
           filters:
             - RewritePath=/api/v1/platform/health/refunds, /api/v1/health
         - id: health-customers
-          uri: lb://customers-privacy-service
+          uri: http://customers-privacy-service:8108
           order: -100
           predicates:
             - Path=/api/v1/platform/health/customers-privacy
           filters:
             - RewritePath=/api/v1/platform/health/customers-privacy, /api/v1/health
         - id: health-deals
-          uri: lb://ai-deals-service
+          uri: http://ai-deals-service:8109
           order: -100
           predicates:
             - Path=/api/v1/platform/health/ai-deals
           filters:
             - RewritePath=/api/v1/platform/health/ai-deals, /api/v1/health
         - id: health-approvals
-          uri: lb://notifications-approvals-service
+          uri: http://notifications-approvals-service:8110
           order: -100
           predicates:
             - Path=/api/v1/platform/health/notifications-approvals
           filters:
             - RewritePath=/api/v1/platform/health/notifications-approvals, /api/v1/health
         - id: health-messaging
-          uri: lb://messaging-delivery-service
+          uri: http://messaging-delivery-service:8111
           order: -100
           predicates:
             - Path=/api/v1/platform/health/messaging-delivery
           filters:
             - RewritePath=/api/v1/platform/health/messaging-delivery, /api/v1/health
         - id: health-reporting
-          uri: lb://reporting-finance-service
+          uri: http://reporting-finance-service:8112
           order: -100
           predicates:
             - Path=/api/v1/platform/health/reporting-finance
@@ -201,7 +201,7 @@ spring:
 
         # --- Platform Admin (catch-all, lowest priority) ---
         - id: platform-admin
-          uri: lb://tenant-admin-service
+          uri: http://tenant-admin-service:8102
           order: 1000
           predicates:
             - Path=/api/v1/platform/**
